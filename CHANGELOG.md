@@ -1,5 +1,18 @@
 # Changelog
 
+- 2026-08-25 **1.0.1**
+    - The README explains how an AI agent actually uses the tool: which file is loaded when, why the skill description has to name the trigger rather than the capability, and that the agent opens the images and judges the pixels instead of reading a report about them
+    - The shortest way to use it is one `docker run` against the published image, with the results belonging to the calling user instead of to root — no clone, no build
+    - The design check renders the full catalogue by default; a reduced run is an intermediate check while working on a detail, and before a commit or after a structural change the full run is mandatory
+    - A ready-made configuration for an AI assistant comes with the tool: copy one directory and the design check runs before every commit, with the checklist, the rule that makes it mandatory and the permissions that keep a run from interrupting
+    - The README is ordered by what a reader needs first and opens with a table that leads straight to the one thing he is looking for; the long reference parts moved behind the parts everybody needs
+    - The README opens with a picture of what the tool delivers — the same page from an ultrawide down to a phone — and says in the first lines what it is for, what it saves and where to go next
+    - The README explains how to make the design check a fixed step before every commit, with the checklist to judge the images against and everything needed to set it up in an AI assistant
+        - the complete skill file to copy, the rule that makes it mandatory, the permissions that keep a run from interrupting, and the reduced run that is small enough for every commit
+        - it also names the condition that decides whether any of it works: the assistant has to be able to open the images, because an assistant that only reads the manifest produces something that looks like a design review and is not one
+    - The ultrawide viewport is now the size people actually buy, 3440 × 1440, and the entry size 2560 × 1080 is captured alongside it
+        - the two sit on opposite sides of the breakpoint a responsive layout typically places there, so a site that shows three columns on the one and six on the other is no longer reviewed from one side only
+
 - 2026-08-25 **1.0.0**
     - First release: render any website in many window sizes and paper formats and collect everything an AI needs for a design review
         - one image of what a visitor sees first, a complete series over every scroll position, one image of the whole page, and a separate series for every inner area that scrolls on its own

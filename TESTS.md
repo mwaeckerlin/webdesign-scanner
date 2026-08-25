@@ -168,6 +168,9 @@ through hundreds of images.
 ### Viewports — `tests/unit/viewports.test.ts`
 
 - **F3** `tests/unit/viewports.test.ts` › covers every aspect ratio and device class the documentation promises — the catalogue is exactly what the README lists.
+- **F3** `tests/unit/viewports.test.ts` › expands to the number of viewports the README promises — the advertised count and the catalogue cannot drift apart.
+- **F3** `tests/unit/viewports.test.ts` › calls the ultrawide people actually buy by the plain name — `desktop-21-9` is 3440 × 1440, not the entry size.
+- **F3** `tests/unit/viewports.test.ts` › carries the entry size of the same aspect ratio as well — 2560 × 1080 sits on the other side of a typical breakpoint and is captured too.
 - **F3** `tests/unit/viewports.test.ts` › gives every entry a width, a height and a device class — no incomplete entry.
 - **F3** `tests/unit/viewports.test.ts` › uses names that say what they are — names usable in a file name.
 - **F4** `tests/unit/viewports.test.ts` › gives every desktop viewport its half width — the common way a window shares a monitor.
@@ -399,6 +402,13 @@ through hundreds of images.
 - **F14** `tests/unit/examples.test.ts` › parse, so a reader can start from them — the example workflows are valid.
 - **F14** `tests/unit/examples.test.ts` › show every action of the format at least once — the reference workflow stays complete.
 - **F16** `tests/unit/examples.test.ts` › keep the password out of the file itself — the examples teach the safe way.
+- **F26** `tests/unit/examples.test.ts` › ships a skill an assistant can pick up on its own — the description says when to apply it, not only what it does.
+- **F26** `tests/unit/examples.test.ts` › tells the assistant to render before it judges — the skill runs the published image directly and hands the results to the calling user.
+- **F26** `tests/unit/examples.test.ts` › demands the full catalogue before a commit — a reduced run is an intermediate check and never closes the design test.
+- **F26** `tests/unit/examples.test.ts` › carries the whole checklist, so nothing is judged from memory — contrast, spacing, empty area, print, states and consistency are all named.
+- **F26** `tests/unit/examples.test.ts` › ships the rule that makes the check mandatory — an available skill alone stays unused.
+- **F26** `tests/unit/examples.test.ts` › ships permissions that keep a run from interrupting — a check that asks every time gets switched off.
+- **F26** `tests/unit/examples.test.ts` › points only at files that are really there — every link in the shipped instructions resolves.
 - **F2** `tests/unit/examples.test.ts` › are all present — the scenario configurations of the test stack exist.
 - **F2** `tests/unit/examples.test.ts` › every scenario configuration is valid, except the one that is broken on purpose — one generated test per configuration file.
 

@@ -1,65 +1,51 @@
 # Webdesign Scanner
 
-Renders a website in a real browser, in every window size and paper format
-that matters, and collects the material an AI needs to review its design:
-aesthetics, ergonomics, attention, effectiveness, responsive behaviour and
-print layout. The result is a directory of images, PDFs and a manifest that
-says which file shows which state — ready to be handed to ChatGPT or Claude
-together with one of the prompts at the end of this document.
+**Responsive Design — Tested and Approved by AI Agent**
 
-All features are listed in [FEATURES.md](FEATURES.md), all tests in
-[TESTS.md](TESTS.md).
+Renders PNG and PDF of your website in many sizes on many resolutions, so that you and your AI coding agent can easily verify the proper fit of your design on all devices.
 
-## Why this and not a screenshot tool
+![The same page from an ultrawide down to a phone: three columns become two, then one](doc/overview.png)
 
-A screenshot tool gives you one picture of a page. A design review needs
-something else: the same page in the sizes people actually use, everything
-below the fold, everything inside panels that scroll on their own, and the
-printed page — for the state that is worth reviewing, which is usually
-behind a login.
+```bash
+$ TARGET_URL=https://example.com npm start
+$ npm run results
+```
 
-- **The sizes people really use, including the awkward ones.** Not only Full
-  HD and a phone, but also the half of a monitor, and a third and two thirds
-  of an ultrawide. That is where responsive layouts break, and it is exactly
-  what nobody tests by hand.
-- **Nothing stays hidden.** A full page image only covers the main document.
-  A sidebar, a chat panel or a table body with its own scrollbar hides
-  content that no full page image shows. Every one of them gets its own
-  series.
-- **The page behind the login.** Cookie banners, forms, menus, frames and new
-  tabs are described in a workflow file — declaratively, versioned, without
-  writing code. Passwords never have to stand in that file.
-- **You never review the wrong page.** The workflow ends with assertions. If
-  they fail, the run fails, and every image produced so far is thrown away.
-  A directory of results always means: this is the page you asked for.
-- **The printed page, as a picture.** Print stylesheets are where design
-  quietly falls apart. Every PDF page is additionally rendered as an image,
-  so an AI can look at the printed page instead of reading the file.
-- **Everything is described.** A manifest maps every file to the viewport,
-  the scroll position and the inner area it shows, so an analysis can point
-  at a finding by file name.
+[Quick start](#quick-start) ·
+[Design check in your AI agent](#the-design-check-in-your-ai-agent) ·
+[Pages behind a login](#pages-behind-a-login-the-workflow-format) ·
+[Prompts for a manual review](#analysing-the-images-by-hand) ·
+[Configuration](#configuration)
 
-## What it produces
+---
 
-For a single run against one url:
+# What it can do
+
+A screenshot tool gives one picture of one window. This gives:
+
+- **26 viewports**, including the half, third and two-third widths of a
+  monitor.
+- **Every scroll position**, plus a separate series for each panel that
+  scrolls on its own.
+- **Pages behind a login**, reached by a declarative workflow file;
+  passwords come from the environment or a secret file.
+- **Proof it was the right page**: closing assertions, and on failure the run
+  aborts and discards every image.
+- **A3, A4, A5, Letter** upright and sideways as PDF, every page also as PNG.
+- **A manifest** naming viewport, scroll position and panel for every file.
+
+## Output of one run
 
 ```text
-/out/
-  screen/                       one png per state
-    hd-1280x720-viewport-000-x00000y00000.png
-    hd-1280x720-scroll-000-x00000y00000.png
-    hd-1280x720-scroll-001-x00000y00648.png
-    …
-    hd-1280x720-fullpage-000-x00000y00000.png
-    hd-1280x720-region-000-x00000y00000-r01-main-x00000y00420.png
-    …
-  print/
-    pdf/a4-portrait.pdf
-    png/a4-portrait-p001.png
-    …
-  meta/
-    manifest.json               every artifact, described
-    summary.md                  the same for people
+out/
+  screen/hd-1280x720-viewport-000-x00000y00000.png
+         hd-1280x720-scroll-001-x00000y00648.png
+         hd-1280x720-fullpage-000-x00000y00000.png
+         hd-1280x720-region-000-x00000y00000-r01-main-x00000y00420.png
+  print/pdf/a4-portrait.pdf
+        png/a4-portrait-p001.png
+  meta/manifest.json    every artifact, described
+       summary.md       the same for people
 ```
 
 ---
@@ -68,7 +54,26 @@ For a single run against one url:
 
 ## Quick start
 
-Nothing but Docker is needed. No other service, no graphical desktop.
+Docker, one command, results in `./out` and belonging to you:
+
+```bash
+$ mkdir -p out
+$ docker run --rm -u $(id -u):$(id -g) -e TARGET_URL=https://example.com \
+      -v "$PWD/out:/out" mwaeckerlin/webdesign-scanner
+```
+
+`out` has to exist beforehand — Docker would otherwise create it as root and
+the run could not write into it.
+
+That captures the full catalogue: 26 viewports, A3, A4, A5 and Letter upright
+and sideways, about five minutes and several hundred images. For a first look
+add:
+
+```bash
+      -e VIEWPORTS=full-hd,phone-medium -e PRINT=false
+```
+
+From a clone, the same through Compose:
 
 ```bash
 $ git clone https://github.com/mwaeckerlin/webdesign-scanner.git
@@ -76,26 +81,6 @@ $ cd webdesign-scanner
 $ TARGET_URL=https://example.com npm start
 $ npm run results        # copies the results to ./out
 $ npm stop               # removes container and volume
-```
-
-Or without npm:
-
-```bash
-$ docker compose build
-$ TARGET_URL=https://example.com docker compose up --exit-code-from scanner scanner
-$ docker compose cp scanner:/out ./out
-$ docker compose down -v
-```
-
-The results live in a Docker volume, so the run cannot litter your working
-copy; `npm run results` fetches them with `docker compose cp`.
-
-Everything below is optional: the defaults capture all thirteen viewports
-with their part widths, and A3, A4, A5 and US Letter upright and sideways.
-That is thorough and slow. For a quick look, cut it down:
-
-```bash
-$ TARGET_URL=https://example.com VIEWPORTS=full-hd,phone-medium PRINT=false npm start
 ```
 
 ## Getting the results out
@@ -108,6 +93,118 @@ $ docker compose cp scanner:/out ./somewhere      # the same, explicitly
 $ docker run --rm -v webdesign-scanner_out:/out --entrypoint /usr/bin/ls \
       mwaeckerlin/webdesign-scanner /out/screen   # look without copying
 ```
+
+## Reaching the target url
+
+**A public site.** Nothing to do.
+
+```bash
+$ TARGET_URL=https://example.com npm start
+```
+
+**A service in the same Compose stack.** Inside a Compose network the
+service name is the host name, and the port is the container port, not a
+published one.
+
+```yaml
+services:
+  app:
+    image: my/app
+  scanner:
+    image: mwaeckerlin/webdesign-scanner
+    depends_on: [app]
+    environment:
+      TARGET_URL: http://app:8080/
+    volumes:
+      - out:/out
+```
+
+**Something running on the Docker host.** `localhost` inside the container
+is the container itself. Use `host.docker.internal`, which needs an extra
+host entry on Linux:
+
+```yaml
+services:
+  scanner:
+    image: mwaeckerlin/webdesign-scanner
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      TARGET_URL: http://host.docker.internal:3000/
+```
+
+For a site with a self-signed certificate add `browser.ignoreHttpsErrors:
+true`; for a staging environment behind a header token use
+`browser.extraHeaders`.
+
+## The design check in your AI agent
+
+Your agent renders every change with a visible surface and judges the images
+before the commit. Three files, ready to copy from
+[examples/.claude/](examples/.claude/).
+
+**1. The skill:**
+
+```bash
+cp -r examples/.claude/skills/design-test ~/.claude/skills/
+```
+
+**2. The rule** — this paragraph into your `~/.claude/CLAUDE.md`. It is what
+makes the agent apply the skill on its own instead of waiting to be asked:
+
+```markdown
+Before every commit that touches something with a visible surface — markup,
+CSS, template, component, layout, font, colour, text, image, print style —
+and at the end of every design-relevant feature or bugfix, run the skill
+`design-test`. In doubt, run it. A passing test suite is never a substitute:
+it says nothing about how the page looks. Findings from that run are fixed
+and re-rendered, never listed. A finding that needs a design decision is
+named as a blocker, with the image that shows it.
+```
+
+**3. The permissions** — into `permissions.allow` of your
+`~/.claude/settings.json`, so a run never stops to ask:
+
+```json
+"Bash(docker run:*)", "Bash(docker compose:*)", "Bash(mkdir:*)"
+```
+
+`Bash(docker run:*)` allows **any** container, including one as root with any
+mount. Narrow it to
+`Bash(docker run --rm -u * mwaeckerlin/webdesign-scanner*)` where that
+matters, and accept that a changed argument order then asks again.
+
+For one project instead of all, put the same three files in
+`<project>/.claude/`.
+
+### How it works
+
+```text
+you: "fix the header spacing"
+ ├─ agent edits the CSS
+ ├─ CLAUDE.md is in context      → visible surface touched → check due
+ ├─ skill descriptions are in context → design-test matches → body loaded
+ ├─ agent runs the container     (allowed, no prompt) → images in out/
+ ├─ agent OPENS the PNGs         → the model sees the pixels
+ ├─ compares each against the checklist it just loaded
+ └─ finding → fix → render again → look again → commit
+```
+
+- **`CLAUDE.md`** is read on every request; that is what makes the check
+  mandatory. One paragraph, no procedure — every line there costs context
+  forever.
+- **The skill** is loaded only when its `description` matches the situation.
+  Hence the description names the **trigger**, not the capability: one that
+  says what the skill *does* is never matched, and the skill stays unused.
+- **The permissions** keep the run from stopping mid-task to ask.
+- **The agent opens the PNGs.** The file tool passes them to the model as
+  images, so it sees the rendered pixels and compares them against the
+  checklist. Without readable images it summarises `manifest.json` and
+  returns a review containing no observation.
+
+---
+
+# Configuration and operation
 
 ## Configuration
 
@@ -176,7 +273,8 @@ ENV WORKFLOW_FILE="/etc/webdesign-scanner/workflow.yaml"
 | `desktop-16-10` | 1440 × 900 | desktop | 1× | 16:10 notebook |
 | `desktop-16-9` | 1600 × 900 | desktop | 1× | 16:9 desktop |
 | `full-hd` | 1920 × 1080 | desktop | 1× | Full HD / 1080p |
-| `desktop-21-9` | 2560 × 1080 | desktop | 1× | 21:9 ultrawide |
+| `desktop-21-9-fhd` | 2560 × 1080 | desktop | 1× | 21:9 ultrawide, entry size |
+| `desktop-21-9` | 3440 × 1440 | desktop | 1× | 21:9 ultrawide, the common size |
 | `uhd` | 3840 × 2160 | desktop | 1× | UHD / 4K |
 | `tablet-portrait` | 768 × 1024 | tablet | 2× | tablet upright |
 | `tablet-landscape` | 1024 × 768 | tablet | 2× | tablet sideways |
@@ -214,7 +312,8 @@ break first.
 | Base | Derived |
 | --- | --- |
 | `full-hd` 1920 × 1080 | `full-hd-half` 960 × 1080 |
-| `desktop-21-9` 2560 × 1080 | `desktop-21-9-third` 853 × 1080, `desktop-21-9-half` 1280 × 1080, `desktop-21-9-two-thirds` 1706 × 1080 |
+| `desktop-21-9-fhd` 2560 × 1080 | `desktop-21-9-fhd-third` 853 × 1080, `desktop-21-9-fhd-half` 1280 × 1080, `desktop-21-9-fhd-two-thirds` 1706 × 1080 |
+| `desktop-21-9` 3440 × 1440 | `desktop-21-9-third` 1146 × 1440, `desktop-21-9-half` 1720 × 1440, `desktop-21-9-two-thirds` 2293 × 1440 |
 
 Widths are rounded down. A derived width below `minDerivedWidth` (320) is
 dropped with a note — it would not be a realistic window. Tablets and phones
@@ -379,284 +478,6 @@ errors are recorded in the manifest. With `diagnostics.failOnPageError` or
 `diagnostics.failOnHttpError` either kind can be turned into a failed run —
 useful in a pipeline, where a broken page should not be reviewed at all.
 
-## Login and navigation: the workflow format
-
-The entry url is rarely the page worth reviewing. A workflow file describes
-how to get there — declaratively, in YAML or JSON, versioned.
-
-```bash
-$ WORKFLOW_FILE=/etc/webdesign-scanner/workflow.yaml npm start
-```
-
-### A first workflow
-
-```yaml
-version: 1
-name: open-the-dashboard
-
-defaults:
-  timeout: 15000
-
-steps:
-  - action: click
-    label: accept cookies
-    optional: true
-    target:
-      role: button
-      name: Accept all
-
-  - action: fill
-    target:
-      label: User name
-    value:
-      env: SCAN_USERNAME
-
-  - action: fill
-    target:
-      label: Password
-    value:
-      file: /run/secrets/scan_password
-
-  - action: click
-    target:
-      role: button
-      name: Sign in
-
-  - action: waitForUrl
-    url: "**/app/**"
-
-  - action: expectVisible
-    target:
-      role: heading
-      name: Dashboard
-
-  - action: ready
-```
-
-Two complete files to start from:
-[`examples/workflow-login.yaml`](examples/workflow-login.yaml) and
-[`examples/workflow-forms-frames-tabs.yaml`](examples/workflow-forms-frames-tabs.yaml),
-which shows every action once.
-
-### Actions
-
-Every step is a mapping with an `action`. Common to all of them: `label` (a
-name for the log and the manifest), `optional`, `when`, `timeout`, `frame`
-and `page`.
-
-| Action | Fields | Does |
-| --- | --- | --- |
-| `goto` | `url`, `waitUntil` | navigate; a relative url is resolved against the entry url |
-| `click` | `target`, `button`, `clickCount`, `force` | click |
-| `dblclick` | `target` | double click |
-| `hover` | `target` | move the pointer onto an element |
-| `fill` | `target`, `value` | set the content of a field at once |
-| `type` | `target`, `value`, `delay` | type key by key, for fields that react to every keystroke |
-| `press` | `key`, optional `target` | a key or a shortcut, with or without an element |
-| `select` | `target`, one of `values`, `labels`, `indexes` | choose in a select |
-| `check` / `uncheck` | `target` | tick and untick |
-| `upload` | `target`, `files` | attach files that are inside the image |
-| `scrollIntoView` | `target` | bring an element into view |
-| `waitForSelector` | `target`, `state` | wait for `visible`, `hidden`, `attached` or `detached` |
-| `waitForUrl` | `url`, `match` | wait until the address matches |
-| `waitForLoadState` | `state` | wait for `load`, `domcontentloaded` or `networkidle` |
-| `waitForTimeout` | `ms` | wait a fixed time — the last resort |
-| `expectVisible` / `expectHidden` | `target` | assert |
-| `expectText` | `target`, `text`, `match` | assert the text of an element |
-| `expectCount` | `target`, `count` | assert how many elements match |
-| `expectUrl` | `url`, `match` | assert the address |
-| `expectTitle` | `text`, `match` | assert the page title |
-| `expectPopup` | `name`, `trigger` | run the trigger step and catch the tab it opens |
-| `usePage` | `name` | continue on another tab; `main` is the one the run started on |
-| `closePage` | `name` | close a tab |
-| `saveStorageState` | `path` | write the authenticated state to a file |
-| `ready` | — | release the state for capture; must be the last step |
-
-`match` is one of `exact`, `contains`, `glob` (default for urls) or `regex`.
-In a glob, `*` stops at a path separator, `**` crosses it, `?` stands for one
-character, and the whole pattern is anchored.
-
-### Addressing an element
-
-Prefer the robust forms — they survive a redesign, a CSS refactoring and a
-change of class names:
-
-```yaml
-target:
-  role: button          # the accessibility role
-  name: Sign in         # its accessible name
-  exact: true           # match the name exactly instead of loosely
-```
-
-| Key | Addresses by |
-| --- | --- |
-| `role` + `name` | accessibility role and accessible name — the first choice |
-| `label` | the label of a form field |
-| `placeholder` | the placeholder text |
-| `text` | visible text |
-| `testId` | a `data-testid` attribute |
-| `altText` | the alternative text of an image |
-| `title` | the title attribute |
-| `css` | a CSS selector — the fallback for markup that offers nothing better |
-
-Exactly one of them per target. Three refinements can be added: `hasText`
-narrows to elements containing a text, `nth` picks one of several matches
-(counting from zero), and `within` scopes the search to a surrounding
-element:
-
-```yaml
-target:
-  role: button
-  name: Delete
-  within:
-    testId: row-7
-```
-
-### Values and secrets
-
-A `value` is either a plain string, or a reference:
-
-```yaml
-value: literal text            # a plain value
-value: { env: SCAN_PASSWORD }  # from an environment variable
-value: { file: /run/secrets/scan_password }   # from a secret file
-value: { literal: "env" }      # a plain value that looks like a reference
-```
-
-**A password never has to stand in the workflow file.** Everything that
-comes from `env` or `file` is registered as a secret and masked as `***` in
-every log line, in the manifest, in the summary and in every error message —
-in its plain, url encoded, JSON encoded and base64 form, because that is how
-a credential reappears in a request url or a serialized error. A missing
-environment variable stops the run rather than sending an empty password and
-locking the account.
-
-For Docker secrets, `/run/secrets/<name>` is the path; a trailing newline is
-stripped. [`examples/with-files/docker-compose.yml`](examples/with-files/docker-compose.yml)
-shows the complete arrangement.
-
-### Optional and conditional steps
-
-A cookie banner is not always there, and on the second viewport the login
-form is gone because the session is already established. Two mechanisms:
-
-```yaml
-- action: click
-  optional: true            # failure is a warning, the run continues
-  target: { role: button, name: Got it }
-
-- action: fill
-  when:                     # evaluated immediately, before the step runs
-    visible: { label: Password }
-  target: { label: Password }
-  value: { env: SCAN_PASSWORD }
-```
-
-`when` takes `visible`, `hidden`, `urlMatches` or `not` with a nested
-condition. It is checked immediately, without waiting — put a `waitFor…`
-step in front of it when the page still has to settle. A condition that
-cannot be evaluated at all, typically because the page is navigating away at
-that moment, counts as **not met**: a workflow that branches after a click
-must not depend on timing.
-
-Prefer `when` over `optional`: a condition that is not met is a decision, a
-failing optional step is an error that happens to be tolerated and costs the
-full timeout.
-
-### Frames, tabs and windows
-
-```yaml
-- action: fill
-  frame: { css: "iframe#editor" }     # or { name: … } or { url: "**/embed*" }
-  target: { role: textbox, name: Body }
-  value: Text inside the frame
-
-- action: expectPopup
-  name: preview
-  trigger:
-    action: click
-    target: { role: link, name: Open preview }
-
-- action: expectTitle
-  text: Preview        # runs on the new tab, which is now the active one
-
-- action: closePage
-  name: preview
-- action: usePage
-  name: main
-```
-
-### Releasing the state for capture
-
-`ready` marks the point where the workflow is done and the state is the one
-to capture. It must be the last step; anything after it would never be seen.
-It is optional — without it, the state after the last step is captured. Use
-it to make the intent explicit.
-
-### Verify that you reached the right page
-
-Every workflow should end with assertions. This is not decoration: without
-them a run that silently stayed on the login page produces a beautiful
-design review of a login form.
-
-```yaml
-- action: expectUrl
-  url: "**/app/dashboard*"
-- action: expectVisible
-  target: { role: heading, name: Dashboard }
-- action: expectHidden
-  target: { role: alert }
-- action: ready
-```
-
-A failing assertion aborts the run with exit code 4, and **every screenshot
-and every PDF produced so far is deleted**. What remains is
-`meta/error.json`, a summary saying plainly that the capture failed, and
-debug screenshots of the state at that moment under `/out/debug/`. A result
-directory can therefore never be mistaken for a finished analysis.
-
-### Storage state
-
-A Playwright storage state is a JSON file holding cookies and local storage
-— an authenticated session in a file.
-
-```bash
-$ STORAGE_STATE=/state/session.json npm start          # start authenticated
-$ STORAGE_STATE_OUT=/state/session.json npm start      # keep the session
-```
-
-Within one run the state is handled automatically: the workflow runs for the
-first viewport, the resulting state is kept and every further viewport starts
-from it. The workflow still runs for every viewport — with the session
-already there, its conditional login steps simply skip. Switch that off with
-`workflow.reuseStorageState: false` if every viewport must log in from
-scratch.
-
-A storage state carries credentials. Writing it into the output directory is
-refused: the results are meant to be handed to someone else. The check
-compares the resolved paths, so `out/session.json` under `out: ./out` is
-refused as well — a path that only reads as if it pointed elsewhere still
-lands in the material you ship.
-
-### What cannot be automated
-
-- **Multi-factor authentication.** A code from an app or an SMS cannot be
-  produced by the workflow. Use a test account without a second factor, an
-  environment where the second factor is disabled, or hand in a storage
-  state created once by hand.
-- **CAPTCHA.** By construction, no. Exclude the scanner from the CAPTCHA, or
-  hand in a storage state.
-- **Passkeys and WebAuthn.** They need a real authenticator. Hand in a
-  storage state, or use a password login for the review account.
-- **External identity providers.** A login through a foreign provider often
-  works — it is just another form on another host — but a bot detection or a
-  device check on the provider's side will stop it. Hand in a storage state.
-- **A session that expires.** A storage state ages. When the run fails on
-  the assertions, create a fresh one.
-
-In every one of these cases the way out is the same: log in once by hand,
-save the storage state, and hand it in with `STORAGE_STATE`.
-
 ## Output structure
 
 ```text
@@ -717,51 +538,6 @@ Neither the manifest nor the summary ever contains a secret or an
 authenticated browser state.
 
 ---
-
-# Running it
-
-## Reaching the target url
-
-**A public site.** Nothing to do.
-
-```bash
-$ TARGET_URL=https://example.com npm start
-```
-
-**A service in the same Compose stack.** Inside a Compose network the
-service name is the host name, and the port is the container port, not a
-published one.
-
-```yaml
-services:
-  app:
-    image: my/app
-  scanner:
-    image: mwaeckerlin/webdesign-scanner
-    depends_on: [app]
-    environment:
-      TARGET_URL: http://app:8080/
-    volumes:
-      - out:/out
-```
-
-**Something running on the Docker host.** `localhost` inside the container
-is the container itself. Use `host.docker.internal`, which needs an extra
-host entry on Linux:
-
-```yaml
-services:
-  scanner:
-    image: mwaeckerlin/webdesign-scanner
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      TARGET_URL: http://host.docker.internal:3000/
-```
-
-For a site with a self-signed certificate add `browser.ignoreHttpsErrors:
-true`; for a staging environment behind a header token use
-`browser.extraHeaders`.
 
 ## Exit codes
 
@@ -886,11 +662,13 @@ own.
 
 ---
 
-# Analysing the result with ChatGPT or Claude
+---
 
-The tool produces evidence. The judgement is made by a model, and the
-quality of that judgement depends almost entirely on the context you give
-it.
+# Analysing the images by hand
+
+Five ready-made prompts for a review you drive yourself: context template,
+full analysis, single screenshot, consolidating two independent analyses,
+before and after.
 
 ## What context is needed, and why
 
@@ -1173,11 +951,294 @@ A thorough run produces hundreds of images. Do not upload all of them.
 
 ---
 
+---
+
+# Pages behind a login: the workflow format
+
+The entry url is rarely the page worth reviewing. A workflow file describes
+how to get there — declaratively, in YAML or JSON, versioned.
+
+```bash
+$ WORKFLOW_FILE=/etc/webdesign-scanner/workflow.yaml npm start
+```
+
+## A first workflow
+
+```yaml
+version: 1
+name: open-the-dashboard
+
+defaults:
+  timeout: 15000
+
+steps:
+  - action: click
+    label: accept cookies
+    optional: true
+    target:
+      role: button
+      name: Accept all
+
+  - action: fill
+    target:
+      label: User name
+    value:
+      env: SCAN_USERNAME
+
+  - action: fill
+    target:
+      label: Password
+    value:
+      file: /run/secrets/scan_password
+
+  - action: click
+    target:
+      role: button
+      name: Sign in
+
+  - action: waitForUrl
+    url: "**/app/**"
+
+  - action: expectVisible
+    target:
+      role: heading
+      name: Dashboard
+
+  - action: ready
+```
+
+Two complete files to start from:
+[`examples/workflow-login.yaml`](examples/workflow-login.yaml) and
+[`examples/workflow-forms-frames-tabs.yaml`](examples/workflow-forms-frames-tabs.yaml),
+which shows every action once.
+
+## Actions
+
+Every step is a mapping with an `action`. Common to all of them: `label` (a
+name for the log and the manifest), `optional`, `when`, `timeout`, `frame`
+and `page`.
+
+| Action | Fields | Does |
+| --- | --- | --- |
+| `goto` | `url`, `waitUntil` | navigate; a relative url is resolved against the entry url |
+| `click` | `target`, `button`, `clickCount`, `force` | click |
+| `dblclick` | `target` | double click |
+| `hover` | `target` | move the pointer onto an element |
+| `fill` | `target`, `value` | set the content of a field at once |
+| `type` | `target`, `value`, `delay` | type key by key, for fields that react to every keystroke |
+| `press` | `key`, optional `target` | a key or a shortcut, with or without an element |
+| `select` | `target`, one of `values`, `labels`, `indexes` | choose in a select |
+| `check` / `uncheck` | `target` | tick and untick |
+| `upload` | `target`, `files` | attach files that are inside the image |
+| `scrollIntoView` | `target` | bring an element into view |
+| `waitForSelector` | `target`, `state` | wait for `visible`, `hidden`, `attached` or `detached` |
+| `waitForUrl` | `url`, `match` | wait until the address matches |
+| `waitForLoadState` | `state` | wait for `load`, `domcontentloaded` or `networkidle` |
+| `waitForTimeout` | `ms` | wait a fixed time — the last resort |
+| `expectVisible` / `expectHidden` | `target` | assert |
+| `expectText` | `target`, `text`, `match` | assert the text of an element |
+| `expectCount` | `target`, `count` | assert how many elements match |
+| `expectUrl` | `url`, `match` | assert the address |
+| `expectTitle` | `text`, `match` | assert the page title |
+| `expectPopup` | `name`, `trigger` | run the trigger step and catch the tab it opens |
+| `usePage` | `name` | continue on another tab; `main` is the one the run started on |
+| `closePage` | `name` | close a tab |
+| `saveStorageState` | `path` | write the authenticated state to a file |
+| `ready` | — | release the state for capture; must be the last step |
+
+`match` is one of `exact`, `contains`, `glob` (default for urls) or `regex`.
+In a glob, `*` stops at a path separator, `**` crosses it, `?` stands for one
+character, and the whole pattern is anchored.
+
+## Addressing an element
+
+Prefer the robust forms — they survive a redesign, a CSS refactoring and a
+change of class names:
+
+```yaml
+target:
+  role: button          # the accessibility role
+  name: Sign in         # its accessible name
+  exact: true           # match the name exactly instead of loosely
+```
+
+| Key | Addresses by |
+| --- | --- |
+| `role` + `name` | accessibility role and accessible name — the first choice |
+| `label` | the label of a form field |
+| `placeholder` | the placeholder text |
+| `text` | visible text |
+| `testId` | a `data-testid` attribute |
+| `altText` | the alternative text of an image |
+| `title` | the title attribute |
+| `css` | a CSS selector — the fallback for markup that offers nothing better |
+
+Exactly one of them per target. Three refinements can be added: `hasText`
+narrows to elements containing a text, `nth` picks one of several matches
+(counting from zero), and `within` scopes the search to a surrounding
+element:
+
+```yaml
+target:
+  role: button
+  name: Delete
+  within:
+    testId: row-7
+```
+
+## Values and secrets
+
+A `value` is either a plain string, or a reference:
+
+```yaml
+value: literal text            # a plain value
+value: { env: SCAN_PASSWORD }  # from an environment variable
+value: { file: /run/secrets/scan_password }   # from a secret file
+value: { literal: "env" }      # a plain value that looks like a reference
+```
+
+**A password never has to stand in the workflow file.** Everything that
+comes from `env` or `file` is registered as a secret and masked as `***` in
+every log line, in the manifest, in the summary and in every error message —
+in its plain, url encoded, JSON encoded and base64 form, because that is how
+a credential reappears in a request url or a serialized error. A missing
+environment variable stops the run rather than sending an empty password and
+locking the account.
+
+For Docker secrets, `/run/secrets/<name>` is the path; a trailing newline is
+stripped. [`examples/with-files/docker-compose.yml`](examples/with-files/docker-compose.yml)
+shows the complete arrangement.
+
+## Optional and conditional steps
+
+A cookie banner is not always there, and on the second viewport the login
+form is gone because the session is already established. Two mechanisms:
+
+```yaml
+- action: click
+  optional: true            # failure is a warning, the run continues
+  target: { role: button, name: Got it }
+
+- action: fill
+  when:                     # evaluated immediately, before the step runs
+    visible: { label: Password }
+  target: { label: Password }
+  value: { env: SCAN_PASSWORD }
+```
+
+`when` takes `visible`, `hidden`, `urlMatches` or `not` with a nested
+condition. It is checked immediately, without waiting — put a `waitFor…`
+step in front of it when the page still has to settle. A condition that
+cannot be evaluated at all, typically because the page is navigating away at
+that moment, counts as **not met**: a workflow that branches after a click
+must not depend on timing.
+
+Prefer `when` over `optional`: a condition that is not met is a decision, a
+failing optional step is an error that happens to be tolerated and costs the
+full timeout.
+
+## Frames, tabs and windows
+
+```yaml
+- action: fill
+  frame: { css: "iframe#editor" }     # or { name: … } or { url: "**/embed*" }
+  target: { role: textbox, name: Body }
+  value: Text inside the frame
+
+- action: expectPopup
+  name: preview
+  trigger:
+    action: click
+    target: { role: link, name: Open preview }
+
+- action: expectTitle
+  text: Preview        # runs on the new tab, which is now the active one
+
+- action: closePage
+  name: preview
+- action: usePage
+  name: main
+```
+
+## Releasing the state for capture
+
+`ready` marks the point where the workflow is done and the state is the one
+to capture. It must be the last step; anything after it would never be seen.
+It is optional — without it, the state after the last step is captured. Use
+it to make the intent explicit.
+
+## Verify that you reached the right page
+
+Every workflow should end with assertions. This is not decoration: without
+them a run that silently stayed on the login page produces a beautiful
+design review of a login form.
+
+```yaml
+- action: expectUrl
+  url: "**/app/dashboard*"
+- action: expectVisible
+  target: { role: heading, name: Dashboard }
+- action: expectHidden
+  target: { role: alert }
+- action: ready
+```
+
+A failing assertion aborts the run with exit code 4, and **every screenshot
+and every PDF produced so far is deleted**. What remains is
+`meta/error.json`, a summary saying plainly that the capture failed, and
+debug screenshots of the state at that moment under `/out/debug/`. A result
+directory can therefore never be mistaken for a finished analysis.
+
+## Storage state
+
+A Playwright storage state is a JSON file holding cookies and local storage
+— an authenticated session in a file.
+
+```bash
+$ STORAGE_STATE=/state/session.json npm start          # start authenticated
+$ STORAGE_STATE_OUT=/state/session.json npm start      # keep the session
+```
+
+Within one run the state is handled automatically: the workflow runs for the
+first viewport, the resulting state is kept and every further viewport starts
+from it. The workflow still runs for every viewport — with the session
+already there, its conditional login steps simply skip. Switch that off with
+`workflow.reuseStorageState: false` if every viewport must log in from
+scratch.
+
+A storage state carries credentials. Writing it into the output directory is
+refused: the results are meant to be handed to someone else. The check
+compares the resolved paths, so `out/session.json` under `out: ./out` is
+refused as well — a path that only reads as if it pointed elsewhere still
+lands in the material you ship.
+
+## What cannot be automated
+
+- **Multi-factor authentication.** A code from an app or an SMS cannot be
+  produced by the workflow. Use a test account without a second factor, an
+  environment where the second factor is disabled, or hand in a storage
+  state created once by hand.
+- **CAPTCHA.** By construction, no. Exclude the scanner from the CAPTCHA, or
+  hand in a storage state.
+- **Passkeys and WebAuthn.** They need a real authenticator. Hand in a
+  storage state, or use a password login for the review account.
+- **External identity providers.** A login through a foreign provider often
+  works — it is just another form on another host — but a bot detection or a
+  device check on the provider's side will stop it. Hand in a storage state.
+- **A session that expires.** A storage state ages. When the run fails on
+  the assertions, create a fresh one.
+
+In every one of these cases the way out is the same: log in once by hand,
+save the storage state, and hand it in with `STORAGE_STATE`.
+
+---
+
 # For developers
 
-The tool is a single-purpose Node application in TypeScript, driving
-Chromium through Playwright. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
-structure and the rules the code follows.
+A single-purpose Node application in TypeScript, driving Chromium through
+Playwright. Structure and coding rules in [CONTRIBUTING.md](CONTRIBUTING.md),
+every capability in [FEATURES.md](FEATURES.md), every test in
+[TESTS.md](TESTS.md).
 
 ```bash
 $ npm install
@@ -1214,32 +1275,3 @@ emulation change hit targets, media queries and rendering. Merging them by
 size alone would silently drop a viewport class.
 
 **Why the exact end position is always captured.** A page is judged by its
-first screen and its last. A series that stops one step short of the bottom
-misses the footer, the closing call to action and everything a designer put
-at the end.
-
-**Why the configuration is validated strictly.** An ignored option produces
-a run that succeeds and captures the wrong thing, and nobody notices until
-the review is wrong. A rejected option costs thirty seconds.
-
-**Why secrets are masked in four encodings.** A password does not only
-appear as itself. It appears url encoded in a query string, JSON encoded in
-a serialized error and base64 encoded in an authorization header. Masking
-only the plain form is masking nothing.
-
-**Why it runs on Ubuntu and not on a scratch image.** Chromium needs a
-userland: fonts, shared libraries, a font configuration. It is therefore
-built on [mwaeckerlin/ubuntu-base], while the other mwaeckerlin runtime
-images are headless by design. This one cannot be, and says so rather than
-pretending otherwise. What it does not need at runtime is removed again
-after the build: the package manager and the whole JavaScript build
-toolchain that comes with it are purged before the image is finished.
-
-**Why the test site is served by a real web server.** The end to end
-scenarios serve their pages from [mwaeckerlin/nginx] rather than from the
-file system, because `file://` behaves differently in a browser — different
-origin rules, different caching, no http status codes — and a tool that is
-used against websites has to be tested against a website.
-
-[mwaeckerlin/ubuntu-base]: https://github.com/mwaeckerlin/ubuntu-base "the runtime base this image is built on"
-[mwaeckerlin/nginx]: https://github.com/mwaeckerlin/nginx "serves the test site of the end to end suite"

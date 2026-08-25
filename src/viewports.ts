@@ -52,7 +52,11 @@ export const BUILTIN_VIEWPORTS: ViewportSpec[] = [
   { name: 'desktop-16-10', width: 1440, height: 900, kind: 'desktop', note: '16:10 notebook' },
   { name: 'desktop-16-9', width: 1600, height: 900, kind: 'desktop', note: '16:9 desktop' },
   { name: 'full-hd', width: 1920, height: 1080, kind: 'desktop', note: 'Full HD / 1080p, 16:9' },
-  { name: 'desktop-21-9', width: 2560, height: 1080, kind: 'desktop', note: '21:9 ultrawide' },
+  // two sizes, because they sit on opposite sides of the breakpoint a
+  // responsive layout typically places around 2560: the entry size shows the
+  // narrow branch, the common one the wide branch
+  { name: 'desktop-21-9-fhd', width: 2560, height: 1080, kind: 'desktop', note: '21:9 ultrawide, entry size' },
+  { name: 'desktop-21-9', width: 3440, height: 1440, kind: 'desktop', note: '21:9 ultrawide, the common size' },
   { name: 'uhd', width: 3840, height: 2160, kind: 'desktop', note: 'UHD / 4K, 16:9' },
   { name: 'tablet-portrait', width: 768, height: 1024, kind: 'tablet', note: 'tablet upright' },
   { name: 'tablet-landscape', width: 1024, height: 768, kind: 'tablet', note: 'tablet sideways' },

@@ -19,8 +19,12 @@ feature is covered by tests listed in [TESTS.md](TESTS.md); the guard
 - **F3 — A viewport catalogue that covers what people really use.** Defaults
   for 4:3, 16:9, 16:10 and 21:9 desktops, for HD, Full HD and UHD, for a
   tablet upright and sideways and for small, medium and large phones, the
-  last one sideways as well. Tablets and phones are emulated with touch input
-  and a retina pixel density. Own viewports can be added, and the list can be
+  last one sideways as well. Ultrawide means the size people actually buy,
+  3440 × 1440; the entry size 2560 × 1080 is captured under its own name as
+  well, because the two sit on opposite sides of the breakpoints a responsive
+  layout typically places there and one of them alone shows only half the
+  behaviour. Tablets and phones are emulated with touch input and a
+  retina pixel density. Own viewports can be added, and the list can be
   reduced to the ones that matter.
 - **F4 — Part widths of a monitor, produced automatically.** Every desktop
   viewport is additionally captured at half its width and the same height,
@@ -134,6 +138,15 @@ feature is covered by tests listed in [TESTS.md](TESTS.md); the guard
   be switched on as a second layer where the host allows unprivileged user
   namespaces; where it does not, the run says so instead of quietly running
   without it. Every manifest records which of the two it was.
+- **F26 — A ready-made configuration for an AI assistant.** The check becomes
+  a fixed step before every commit by copying one directory: a skill holding
+  the render command and the full checklist, whose description says *when* to
+  apply it so the assistant reaches for it on its own; the rule that makes it
+  mandatory; and the permissions that let a run happen without interrupting.
+  It also names the condition on which everything else depends — the
+  assistant has to be able to open the images, because one that only reads
+  the manifest produces something that looks like a design review and is not
+  one.
 - **F25 — An interrupted run says it was interrupted.** Pressing ctrl-c, or
   shutting the container down, stops the run at once and reports it as its
   own category with its own exit code, naming the signal that caused it. The

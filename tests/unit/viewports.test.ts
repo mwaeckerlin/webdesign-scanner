@@ -15,10 +15,27 @@ const options = { derived: true, minDerivedWidth: MIN_DERIVED_WIDTH }
 describe('the built-in viewport catalogue', () => {
   it('covers every aspect ratio and device class the documentation promises', () => {
     expect(builtinNames()).toEqual([
-      'desktop-4-3', 'hd', 'desktop-16-10', 'desktop-16-9', 'full-hd', 'desktop-21-9', 'uhd',
+      'desktop-4-3', 'hd', 'desktop-16-10', 'desktop-16-9', 'full-hd',
+      'desktop-21-9-fhd', 'desktop-21-9', 'uhd',
       'tablet-portrait', 'tablet-landscape',
       'phone-small', 'phone-medium', 'phone-large', 'phone-landscape'
     ])
+  })
+
+  it('expands to the number of viewports the README promises', () => {
+    // the README sells this number; a silent change would make it a lie
+    expect(expandViewports(BUILTIN_VIEWPORTS, options)).toHaveLength(26)
+  })
+
+  it('calls the ultrawide people actually buy by the plain name', () => {
+    const wide = BUILTIN_VIEWPORTS.find(spec => spec.name === 'desktop-21-9')
+    expect([wide?.width, wide?.height]).toEqual([3440, 1440])
+  })
+
+  it('carries the entry size of the same aspect ratio as well', () => {
+    const wide = BUILTIN_VIEWPORTS
+      .filter(spec => spec.kind === 'desktop' && spec.width / spec.height >= ULTRAWIDE_ASPECT)
+    expect(wide.map(spec => [spec.width, spec.height])).toEqual([[2560, 1080], [3440, 1440]])
   })
 
   it('gives every entry a width, a height and a device class', () => {

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -58,6 +58,64 @@ describe('the shipped example workflows', () => {
     const text = readFileSync(join(EXAMPLES, 'workflow-login.yaml'), 'utf8')
     expect(text).toMatch(/env:\s+SCAN_USERNAME/)
     expect(text).toMatch(/file:\s+\/run\/secrets\//)
+  })
+})
+
+describe('the shipped assistant configuration', () => {
+  const CLAUDE = join(EXAMPLES, '.claude')
+  const skill = (): string => readFileSync(join(CLAUDE, 'skills', 'design-test', 'SKILL.md'), 'utf8')
+
+  it('ships a skill an assistant can pick up on its own', () => {
+    const text = skill()
+    expect(text.startsWith('---\n'), 'the skill needs front matter').toBe(true)
+    const front = text.slice(4, text.indexOf('\n---', 4))
+    expect(front).toMatch(/^name:\s*design-test$/m)
+    // the description has to say WHEN, otherwise the assistant never reaches
+    // for the skill by itself and the whole setup stays decorative
+    expect(front).toMatch(/description:.*\bbefore\b/is)
+    expect(front).toMatch(/description:.*\bcommit\b/is)
+  })
+
+  it('tells the assistant to render before it judges', () => {
+    const text = skill()
+    expect(text).toMatch(/docker run/)
+    expect(text).toMatch(/TARGET_URL=/)
+    // the results have to belong to the caller, otherwise root owns them and
+    // the next run cannot replace them
+    expect(text).toMatch(/-u \$\(id -u\)/)
+    expect(text).toMatch(/-v "\$PWD\/out:\/out"/)
+  })
+
+  it('demands the full catalogue before a commit', () => {
+    const text = skill()
+    expect(text).toMatch(/full catalogue/i)
+    expect(text).toMatch(/before a commit[^.]*full\s+run\s+is\s+mandatory/is)
+  })
+
+  it('carries the whole checklist, so nothing is judged from memory', () => {
+    const text = skill().toLowerCase()
+    for (const point of ['contrast', 'spacing', 'empty', 'print', 'states', 'consisten']) {
+      expect(text, `the checklist says nothing about ${point}`).toContain(point)
+    }
+  })
+
+  it('ships the rule that makes the check mandatory', () => {
+    const text = readFileSync(join(CLAUDE, 'CLAUDE.md'), 'utf8')
+    expect(text).toMatch(/design-test/)
+    expect(text).toMatch(/before every commit/i)
+  })
+
+  it('ships permissions that keep a run from interrupting', () => {
+    const settings = JSON.parse(readFileSync(join(CLAUDE, 'settings.json'), 'utf8'))
+    expect(settings.permissions.allow).toContain('Bash(docker compose:*)')
+  })
+
+  it('points only at files that are really there', () => {
+    const text = readFileSync(join(CLAUDE, 'README.md'), 'utf8')
+    for (const match of text.matchAll(/]\(([^)#:]+)\)/g)) {
+      const target = match[1]!
+      expect(existsSync(join(CLAUDE, target)), `${target} is linked but absent`).toBe(true)
+    }
   })
 })
 

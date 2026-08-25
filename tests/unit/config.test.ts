@@ -152,7 +152,7 @@ describe('validation of the configuration file', () => {
 describe('defaults', () => {
   it('captures every built-in viewport with its part widths', () => {
     const config = loadConfig(base)
-    expect(config.viewports.presets).toHaveLength(13)
+    expect(config.viewports.presets).toHaveLength(14)
     expect(config.viewports.derived).toBe(true)
   })
 
