@@ -1,0 +1,12 @@
+# A main document that scrolls horizontally as well as vertically.
+version: 1
+viewports:
+  presets:
+    - hd
+  derived: false
+stabilize:
+  settleMs: 200
+  scrollSettleMs: 100
+  networkIdleTimeout: 3000
+print:
+  enabled: false

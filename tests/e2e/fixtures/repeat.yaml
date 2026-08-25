@@ -1,0 +1,17 @@
+# The same page, the same viewport and the same timings as the `basic`
+# scenario. Two runs must produce the same image: that is what freezing
+# animations, waiting for webfonts and settling the network are for.
+version: 1
+viewports:
+  presets:
+    - hd
+  derived: false
+stabilize:
+  settleMs: 200
+  scrollSettleMs: 100
+  networkIdleTimeout: 3000
+screenshots:
+  scrollSeries: false
+  fullPage: false
+print:
+  enabled: false

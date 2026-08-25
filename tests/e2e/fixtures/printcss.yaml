@@ -1,0 +1,22 @@
+# The page brings its own `@page { size: A5 landscape }`. With
+# preferCSSPageSize the document wins over the configured A4.
+version: 1
+viewports:
+  presets:
+    - hd
+  derived: false
+stabilize:
+  settleMs: 200
+  networkIdleTimeout: 3000
+screenshots:
+  enabled: false
+print:
+  formats:
+    - A4
+  orientations:
+    - portrait
+  preferCSSPageSize: true
+  viewport: hd
+  png:
+    enabled: true
+    dpi: 96

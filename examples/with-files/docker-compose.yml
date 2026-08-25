@@ -1,0 +1,41 @@
+# Capture a page of an application that runs in the same stack, with a
+# configuration file, a workflow file and a password taken from a secret.
+#
+#   docker compose up --build --exit-code-from scanner scanner
+#   docker compose cp scanner:/out ./out
+#   docker compose down -v
+
+name: webdesign-scanner-example
+
+services:
+
+  # the application under review; replace it with your own service
+  app:
+    image: mwaeckerlin/nginx
+
+  scanner:
+    build:
+      context: .
+    init: true
+    shm_size: 1gb
+    depends_on:
+      - app
+    environment:
+      # inside a compose network the service name is the host name
+      TARGET_URL: http://app:8080/
+      OUT_DIR: /out
+      # the user name is not a secret and may stand here
+      SCAN_USERNAME: review
+    secrets:
+      # the workflow reads it from /run/secrets/scan_password
+      - scan_password
+    volumes:
+      - out:/out
+
+secrets:
+  scan_password:
+    # the only file the host provides — keep it out of version control
+    file: ./scan_password.txt
+
+volumes:
+  out:

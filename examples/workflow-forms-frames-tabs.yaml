@@ -1,0 +1,172 @@
+# Every remaining action in one file: form fields, keyboard, file upload,
+# an embedded frame and a page that opens in a new tab.
+#
+# Use it as a reference while writing your own workflow, not as a template to
+# run as it stands.
+
+version: 1
+name: reference-of-all-actions
+description: shows every supported action once
+
+defaults:
+  timeout: 15000
+
+steps:
+
+  # ---------------------------------------------------------- navigation ---
+  - action: goto
+    label: open the form
+    url: /forms/new
+    waitUntil: load
+
+  # --------------------------------------------------------------- forms ---
+  - action: fill
+    target:
+      label: Title
+    value: Quarterly report
+
+  - action: type
+    label: type slowly, for fields that react to every keystroke
+    target:
+      placeholder: Search
+    value: annual
+    delay: 40
+
+  - action: select
+    label: pick by value
+    target:
+      label: Department
+    values:
+      - finance
+
+  - action: select
+    label: pick by visible label
+    target:
+      label: Language
+    labels:
+      - Deutsch
+
+  - action: check
+    target:
+      label: Send a copy to myself
+
+  - action: uncheck
+    target:
+      label: Subscribe to the newsletter
+
+  - action: upload
+    label: attach a file that is inside the image
+    target:
+      label: Attachment
+    files:
+      - /app/examples/attachment.pdf
+
+  - action: press
+    label: keyboard shortcut on an element
+    target:
+      label: Title
+    key: Control+A
+
+  - action: press
+    label: keyboard shortcut without an element
+    key: Escape
+
+  - action: hover
+    target:
+      role: button
+      name: Help
+
+  - action: scrollIntoView
+    target:
+      testId: legal-notice
+
+  # -------------------------------------------------------------- frames ---
+  - action: fill
+    label: a field inside an embedded editor
+    frame:
+      css: iframe#editor
+    target:
+      role: textbox
+      name: Body
+    value: Text inside the frame
+
+  - action: click
+    label: a button inside a frame addressed by name
+    frame:
+      name: payment
+    target:
+      role: button
+      name: Pay
+
+  # ---------------------------------------------------------- new window ---
+  - action: expectPopup
+    label: the preview opens in a new tab
+    name: preview
+    trigger:
+      action: click
+      target:
+        role: link
+        name: Open preview
+
+  - action: expectTitle
+    text: Preview
+
+  - action: closePage
+    name: preview
+
+  - action: usePage
+    name: main
+
+  # ------------------------------------------------------ optional branch ---
+  - action: click
+    label: dismiss a hint that is not always there
+    optional: true
+    target:
+      role: button
+      name: Got it
+
+  - action: click
+    label: only when the sidebar is collapsed
+    when:
+      hidden:
+        testId: sidebar
+    target:
+      role: button
+      name: Open menu
+
+  - action: click
+    label: only outside the checkout
+    when:
+      not:
+        urlMatches:
+          url: "**/checkout/**"
+          match: glob
+    target:
+      role: link
+      name: Continue shopping
+
+  # ---------------------------------------------------------- assertions ---
+  - action: expectText
+    target:
+      testId: status
+    text: saved
+    match: contains
+
+  - action: expectCount
+    target:
+      role: listitem
+    count: 12
+
+  - action: expectUrl
+    url: "**/forms/**"
+    match: glob
+
+  # -------------------------------------------------------- reusable login ---
+  - action: saveStorageState
+    label: keep the authenticated state for later runs
+    path: /state/storage.json
+
+  - action: waitForTimeout
+    ms: 500
+
+  - action: ready

@@ -1,0 +1,141 @@
+# Features
+
+Numbered register of everything the tool does for the person using it. A
+number is never reused, so a reference stays unambiguous forever. Every
+feature is covered by tests listed in [TESTS.md](TESTS.md); the guard
+`tests/docs-contract.sh` fails when a feature has no test.
+
+- **F1 — The page is rendered the way a visitor sees it.** A real browser
+  loads the target url and executes its JavaScript, so single page
+  applications, client side rendering and content that only appears after a
+  script has run are all captured — not the source text of the page.
+- **F2 — Configuration from a file and from the environment.** Everything is
+  configurable through a YAML or JSON file, and the settings that change per
+  run additionally through environment variables, which win over the file.
+  The configuration is validated strictly: an unknown option, a wrong type or
+  a value outside its range stops the run with a message naming the exact
+  place. An option that is quietly ignored would produce a run that looks
+  fine and captures the wrong thing.
+- **F3 — A viewport catalogue that covers what people really use.** Defaults
+  for 4:3, 16:9, 16:10 and 21:9 desktops, for HD, Full HD and UHD, for a
+  tablet upright and sideways and for small, medium and large phones, the
+  last one sideways as well. Tablets and phones are emulated with touch input
+  and a retina pixel density. Own viewports can be added, and the list can be
+  reduced to the ones that matter.
+- **F4 — Part widths of a monitor, produced automatically.** Every desktop
+  viewport is additionally captured at half its width and the same height,
+  and an ultrawide one also at a third and at two thirds. That is how a
+  window that shares a monitor with another one really looks, and it is where
+  responsive layouts usually break first.
+- **F5 — Two viewports that would render identically are merged.** Width,
+  height, pixel density, touch and mobile emulation decide it; the first name
+  wins and the other one is recorded as an alias. A tablet and a desktop of
+  the same size are therefore both kept — they render differently.
+- **F6 — What a visitor sees the moment the page is ready.** One image per
+  viewport of the visible area alone, after loading and after the optional
+  workflow: the first impression a design is judged by.
+- **F7 — A scroll series over the whole main document.** Starting at the top,
+  advancing by the visible size minus a small configurable overlap so nothing
+  falls between two images, always including the exact end position, in both
+  directions where the document scrolls sideways as well. Content that loads
+  while scrolling extends the series instead of being missed.
+- **F8 — One image of the whole document.** Where the browser can produce it,
+  a single full page image shows the composition of the whole page at once.
+  Very long documents are covered by the scroll series instead.
+- **F9 — Independently scrollable inner areas, captured separately.** A
+  sidebar, a chat panel, a table body or a modal with its own scrollbar hides
+  content that no full page image shows. Every visible area that genuinely
+  scrolls gets its own series, nested areas included. The areas are captured
+  one after another and never combined with each other: combining the
+  positions of independent areas would multiply into thousands of images
+  without showing anything new. An area whose content fits is not treated as
+  scrollable.
+- **F10 — Safety limits that are configurable and always visible.** The
+  number of images, of scroll steps, of inner areas and of nesting levels can
+  be limited; the defaults are high enough for real sites. Whenever a limit
+  applies it is written into the log, into the manifest and into the summary,
+  naming what was wanted and what was captured — an incomplete capture must
+  never look like a complete one.
+- **F11 — File names that say what they show.** Every name carries the
+  viewport, its dimensions, the capture type, the sequence number and the
+  scroll position, and for an inner area additionally which area it is and
+  where the main document stood. An analysis can refer to a finding by file
+  name without any further lookup.
+- **F12 — Print output in the paper formats that matter.** The browser print
+  function produces a PDF for every configured format and orientation, by
+  default A3, A4, A5 and US Letter, upright and sideways, with print
+  stylesheets, background graphics, margins and scaling applied. Whether the
+  configured format or a `@page` rule of the document wins is a documented
+  setting.
+- **F13 — Every printed page as an image.** Each PDF page is additionally
+  rendered as a PNG, so an analysis can look at the printed page instead of
+  reading the file: page breaks in the wrong place, missing backgrounds and a
+  table that runs off the paper are only visible there.
+- **F14 — A declarative, versioned workflow format.** Navigation, clicks,
+  form filling, selection, checkboxes, keyboard input, file upload, waiting
+  for elements, urls and load states, assertions, optional and conditional
+  steps, frames, new tabs and windows, and the explicit release of the state
+  for capture — all as data in YAML or JSON, addressed by role, accessible
+  name, label, placeholder, text, test id, alt text or title, with a CSS
+  selector as the fallback.
+- **F15 — Login, navigation and proof that the right page was reached.** The
+  entry url is rarely the page worth reviewing. The workflow gets there, and
+  its closing assertions prove it: an entry url that answers with an error
+  page stops the run rather than being reviewed.
+- **F16 — Secrets stay out of everything.** A password never has to stand in
+  the workflow file; it comes from an environment variable or a secret file.
+  Every value obtained that way is masked in every log line, in the manifest,
+  in the summary and in every error message — in its plain, url encoded, JSON
+  encoded and base64 form. The authenticated browser state never lands in the
+  results.
+- **F17 — Authenticated sessions, brought along or produced.** An existing
+  Playwright storage state can be handed in, and one can be written out for
+  later runs. Within a run the state produced by the first viewport is
+  re-used, so the login happens once while the workflow still runs for every
+  viewport.
+- **F18 — A failed run leaves nothing that looks successful.** A failing
+  workflow step, a failed assertion, a navigation error or a rendering error
+  aborts the run with a non-zero exit code, and every screenshot and every
+  print file produced so far is thrown away. What stays is an error report, a
+  summary saying plainly that the capture failed, and clearly separated debug
+  screenshots of the state at the moment of the failure.
+- **F19 — A reproducible state before anything is captured.** Navigation
+  completed, workflow completed, webfonts loaded, a configurable wait for
+  content that arrives late, a bounded wait for background requests so a page
+  with a websocket does not block forever, and animations and the text caret
+  frozen. Two runs of the same page are comparable instead of differing by
+  noise.
+- **F20 — Problems of the page are recorded.** Navigation errors, uncaught
+  JavaScript errors, failed requests and console errors are logged and land
+  in the manifest, so a reviewer knows whether the design or a broken page is
+  being looked at. Every entry names the address it concerns — on the visible
+  log line as well as in the manifest, because a warning without it cannot be
+  told apart from the dozen others a page produces. Either kind can
+  optionally be treated as a failed run.
+- **F21 — A manifest that describes every artifact.** Requested and final
+  url, time, duration, the complete effective configuration, every viewport
+  with its dimensions and its origin, the workflow status per viewport, and
+  for every file its capture type, scroll position, inner area, pixel size,
+  paper format and page number — plus all warnings, errors and limits.
+- **F22 — A short summary for people.** What was captured, in which
+  viewports, how much of it, what went wrong, which limits applied and what
+  is needed to have it analysed.
+- **F23 — Existing results are never silently overwritten.** A run into a
+  directory that already holds results stops and says how to proceed. Only an
+  explicit instruction replaces them, and the earlier results stay untouched
+  in every other case.
+- **F24 — A reproducible one-shot job.** Built and run with Docker Compose,
+  without any other service and without a graphical desktop, writing into a
+  volume, and reporting what happened through its exit code: 0 for a
+  complete capture, and a distinct code for a configuration, output,
+  workflow, navigation or rendering failure. The container is the isolation
+  boundary — unprivileged user, nothing mounted from the host, no port
+  served, one process that renders and exits. The browser's own sandbox can
+  be switched on as a second layer where the host allows unprivileged user
+  namespaces; where it does not, the run says so instead of quietly running
+  without it. Every manifest records which of the two it was.
+- **F25 — An interrupted run says it was interrupted.** Pressing ctrl-c, or
+  shutting the container down, stops the run at once and reports it as its
+  own category with its own exit code, naming the signal that caused it. The
+  half finished images are thrown away like after any other failure, and the
+  summary says the run was stopped rather than blaming the page or the tool.

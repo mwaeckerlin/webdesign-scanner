@@ -1,0 +1,99 @@
+version: 1
+name: e2e-login
+description: accept the banner, sign in and verify that the dashboard was reached
+
+defaults:
+  timeout: 10000
+
+steps:
+
+  - action: waitForLoadState
+    state: load
+
+  # never present on the second viewport, where the consent is already stored
+  - action: click
+    label: accept cookies
+    when:
+      visible:
+        role: button
+        name: Accept all
+    target:
+      role: button
+      name: Accept all
+
+  # exercises the optional path: this button does not exist on any page
+  - action: click
+    label: dismiss a hint that is not there
+    optional: true
+    timeout: 500
+    target:
+      role: button
+      name: There is no such button
+
+  - action: fill
+    label: user name
+    when:
+      visible:
+        label: User name
+    target:
+      label: User name
+    value:
+      env: SCAN_USERNAME
+
+  - action: fill
+    label: password
+    when:
+      visible:
+        label: Password
+    target:
+      label: Password
+    value:
+      file: /run/secrets/scan_password
+
+  - action: click
+    label: submit
+    when:
+      visible:
+        role: button
+        name: Sign in
+    target:
+      role: button
+      name: Sign in
+
+  # the second viewport starts with the session already in the browser: the
+  # login page offers a link instead of a form
+  - action: click
+    label: continue with the existing session
+    when:
+      visible:
+        role: link
+        name: Continue to the dashboard
+    target:
+      role: link
+      name: Continue to the dashboard
+
+  - action: waitForUrl
+    url: "**/app.html"
+
+  - action: waitForLoadState
+    state: load
+
+  - action: expectUrl
+    url: "**/app.html"
+
+  - action: expectVisible
+    target:
+      role: heading
+      name: Dashboard
+
+  - action: expectText
+    label: the signed in user is shown
+    target:
+      testId: user
+    text: review
+
+  - action: expectHidden
+    target:
+      role: alert
+
+  - action: ready

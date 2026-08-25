@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Sign in</h1>
+</header>
+<main>
+<section id="form-section">
+<h2>Review account</h2>
+<form id="login">
+<label>User name
+<input name="user" autocomplete="username">
+</label>
+<label>Password
+<input name="password" type="password" autocomplete="current-password">
+</label>
+<button type="submit">Sign in</button>
+</form>
+<p role="alert" id="error" hidden>Wrong user name or password.</p>
+</section>
+<section id="signed-in" hidden>
+<h2>Already signed in</h2>
+<p><a href="app.html">Continue to the dashboard</a></p>
+</section>
+</main>
+<div class="banner" id="banner">
+<p>This page uses cookies.</p>
+<button type="button" id="accept">Accept all</button>
+</div>
+<script src="login.js"></script>
+</body>
+</html>

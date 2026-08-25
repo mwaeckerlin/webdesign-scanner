@@ -1,0 +1,21 @@
+# Screenshots, scroll series, full page image and print output of the long
+# test page, in three effective viewports (one of them a derived half width).
+version: 1
+viewports:
+  presets:
+    - hd
+    - phone-medium
+  derived: true
+stabilize:
+  settleMs: 200
+  scrollSettleMs: 100
+  networkIdleTimeout: 3000
+print:
+  formats:
+    - A4
+  orientations:
+    - portrait
+  viewport: hd
+  png:
+    enabled: true
+    dpi: 96

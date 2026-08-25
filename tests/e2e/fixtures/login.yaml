@@ -1,0 +1,21 @@
+# Log in first, then capture the page behind the login. The workflow runs
+# for every viewport; the second viewport starts from the authenticated
+# state produced by the first one.
+version: 1
+viewports:
+  presets:
+    - hd
+    - phone-medium
+  derived: false
+stabilize:
+  settleMs: 200
+  scrollSettleMs: 100
+  networkIdleTimeout: 3000
+screenshots:
+  scrollSeries: false
+print:
+  enabled: false
+workflow:
+  file: /etc/wds/workflow-login.yaml
+  reuseStorageState: true
+  storageStateOut: /tmp/storage-state.json

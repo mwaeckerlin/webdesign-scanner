@@ -1,0 +1,205 @@
+# One service per scenario, every one a complete run of the real tool
+# against real pages in a real browser. Each scenario writes into its own
+# volume, except `existing`, which deliberately re-uses the volume of
+# `basic` to prove that a second run does not overwrite the first.
+#
+# distinct project name: several e2e stacks in this repository family live in
+# a directory called e2e and would otherwise collide
+name: webdesign-scanner-e2e
+
+x-scanner: &scanner
+  build:
+    context: .
+  init: true
+  # chromium keeps its render surfaces in shared memory
+  shm_size: 1gb
+  depends_on:
+    - site
+
+services:
+
+  site:
+    build:
+      context: ./site
+
+  # long document, fixed header, print stylesheet: first view, scroll series,
+  # full page image, pdf and rendered pdf pages in three viewports
+  basic:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/index.html
+      CONFIG_FILE: /etc/wds/basic.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - basic:/out
+
+  # a second run into the same volume must refuse to overwrite
+  existing:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/index.html
+      CONFIG_FILE: /etc/wds/basic.yaml
+      OUT_DIR: /out
+      ON_EXISTING: fail
+      LOG_LEVEL: info
+    volumes:
+      - basic:/out
+
+  # the same page, the same viewport, the same timings as `basic`: the
+  # images of the two runs have to be identical
+  repeat:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/index.html
+      CONFIG_FILE: /etc/wds/repeat.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - repeat:/out
+
+  # two independent inner areas, one nested inside another, one horizontal,
+  # and one overflow box whose content fits and which is therefore no region
+  regions:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/inner.html
+      CONFIG_FILE: /etc/wds/regions.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - regions:/out
+
+  # the document grows while the scroll series is running
+  lazy:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/lazy.html
+      CONFIG_FILE: /etc/wds/lazy.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - lazy:/out
+
+  # a main document that also scrolls sideways
+  wide:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/wide.html
+      CONFIG_FILE: /etc/wds/wide.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - wide:/out
+
+  # cookie banner, login with a secret from the environment and one from a
+  # secret file, navigation and a final check of the page reached
+  login:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/login.html
+      CONFIG_FILE: /etc/wds/login.yaml
+      OUT_DIR: /out
+      SCAN_USERNAME: review
+      LOG_LEVEL: debug
+    volumes:
+      - login:/out
+
+  # the same login, but the closing assertion demands a page that never comes
+  loginfail:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/login.html
+      CONFIG_FILE: /etc/wds/loginfail.yaml
+      OUT_DIR: /out
+      SCAN_USERNAME: review
+      LOG_LEVEL: debug
+    volumes:
+      - loginfail:/out
+
+  # every safety limit set so low that it has to apply
+  limits:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/inner.html
+      CONFIG_FILE: /etc/wds/limits.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - limits:/out
+
+  # the document brings its own paper size and is allowed to win
+  printcss:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/printcss.html
+      CONFIG_FILE: /etc/wds/printcss.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - printcss:/out
+
+  # a misspelled option must stop the run
+  badconfig:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/index.html
+      CONFIG_FILE: /etc/wds/badconfig.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - badconfig:/out
+
+  # an entry url that answers 404 is an error page, not the page to analyse.
+  # A missing asset is used rather than a missing page: the web server of the
+  # test site answers an unknown *page* with its single page app shell.
+  notfound:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/does-not-exist.js
+      CONFIG_FILE: /etc/wds/regions.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - notfound:/out
+
+  # a slow run that is stopped from outside while it captures: the signal a
+  # person sends with ctrl-c, and the one a container shutdown sends
+  abort:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/index.html
+      CONFIG_FILE: /etc/wds/abort.yaml
+      OUT_DIR: /out
+      LOG_LEVEL: info
+    volumes:
+      - abort:/out
+
+  # viewports straight from the environment, no configuration file at all
+  envonly:
+    <<: *scanner
+    environment:
+      TARGET_URL: http://site:8080/index.html
+      OUT_DIR: /out
+      VIEWPORTS: phone-small
+      PRINT_FORMATS: A5
+      PRINT_ORIENTATIONS: landscape
+      SETTLE_MS: "200"
+      LOG_LEVEL: info
+    volumes:
+      - envonly:/out
+
+volumes:
+  basic:
+  repeat:
+  regions:
+  lazy:
+  wide:
+  login:
+  loginfail:
+  limits:
+  printcss:
+  badconfig:
+  notfound:
+  abort:
+  envonly:

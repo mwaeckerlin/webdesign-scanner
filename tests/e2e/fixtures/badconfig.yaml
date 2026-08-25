@@ -1,0 +1,7 @@
+# A misspelled option. It must stop the run instead of being ignored: a
+# quietly dropped option produces a run that looks fine and captures the
+# wrong thing.
+version: 1
+screenshots:
+  enabled: true
+  scrollSeriess: true

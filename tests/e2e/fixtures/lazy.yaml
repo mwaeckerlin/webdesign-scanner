@@ -1,0 +1,15 @@
+# The document grows while it is being captured. The pre-scroll pass is off
+# on purpose: it would load everything up front and the scroll series would
+# never have to extend itself.
+version: 1
+viewports:
+  presets:
+    - hd
+  derived: false
+stabilize:
+  settleMs: 300
+  scrollSettleMs: 300
+  networkIdleTimeout: 3000
+  preScroll: false
+print:
+  enabled: false

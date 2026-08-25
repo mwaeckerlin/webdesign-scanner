@@ -1,0 +1,117 @@
+# Accept a cookie banner, log in and open the screen that is to be reviewed.
+#
+# The workflow runs once per viewport. Every step that only applies the first
+# time carries a condition or is marked optional, so the second run — which
+# already starts authenticated — walks through it without failing.
+#
+# No password appears in this file. `env` reads an environment variable,
+# `file` reads a secret file (a docker secret under /run/secrets, for
+# example). Both values are masked in every log line, in the manifest and in
+# every error message.
+
+version: 1
+name: login-and-open-dashboard
+description: log in with a technical review account and open the dashboard
+
+defaults:
+  # milliseconds, per step; a single step may override it with `timeout`
+  timeout: 15000
+
+steps:
+
+  # The banner only shows up for a browser without the consent cookie.
+  - action: click
+    label: accept cookies
+    optional: true
+    target:
+      role: button
+      name: Accept all
+
+  # Skip the whole login when the session is already authenticated.
+  - action: click
+    label: open the login form
+    when:
+      visible:
+        role: link
+        name: Sign in
+    target:
+      role: link
+      name: Sign in
+
+  # A click that navigates has to be waited out before the next condition is
+  # checked, otherwise the branch below depends on timing. `optional` keeps
+  # the step harmless on the run that never opened the form.
+  - action: waitForSelector
+    label: the login form is there
+    optional: true
+    timeout: 5000
+    target:
+      label: User name
+    state: visible
+
+  - action: fill
+    label: user name
+    when:
+      visible:
+        label: User name
+    target:
+      label: User name
+    value:
+      env: SCAN_USERNAME
+
+  - action: fill
+    label: password
+    when:
+      visible:
+        label: Password
+    target:
+      label: Password
+    value:
+      file: /run/secrets/scan_password
+
+  - action: click
+    label: submit the login
+    when:
+      visible:
+        role: button
+        name: Sign in
+    target:
+      role: button
+      name: Sign in
+
+  - action: waitForUrl
+    label: wait for the application
+    url: "**/app/**"
+
+  - action: waitForLoadState
+    state: networkidle
+
+  # Navigate to the page that is actually being reviewed.
+  - action: click
+    label: open the dashboard
+    target:
+      role: link
+      name: Dashboard
+
+  - action: waitForSelector
+    target:
+      testId: dashboard
+    state: visible
+
+  # Prove that the right page was reached. Without these the run could
+  # cheerfully produce a design review of an error page.
+  - action: expectUrl
+    url: "**/app/dashboard*"
+
+  - action: expectVisible
+    target:
+      role: heading
+      name: Dashboard
+
+  - action: expectHidden
+    target:
+      role: alert
+
+  # Everything before this point was navigation; from here the state is the
+  # one that gets captured.
+  - action: ready

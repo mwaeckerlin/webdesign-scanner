@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inner scroll areas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>Inner scroll areas</h1>
+</header>
+<main>
+<section>
+<h2>Two independent areas and one nested area</h2>
+<p>Each area scrolls on its own; the combination of their positions is not interesting.</p>
+</section>
+<section>
+<h2>First area</h2>
+<div class="box" id="area-one" aria-label="First scroll area">
+<div class="filler">First area, scrolls vertically on its own.</div>
+</div>
+</section>
+<section>
+<h2>Second area with a nested area</h2>
+<div class="box" id="area-two" aria-label="Second scroll area">
+<div class="nested" id="area-nested" aria-label="Nested scroll area">
+<div class="filler">Nested area, scrolls inside the second area.</div>
+</div>
+<div class="filler">Second area, scrolls vertically on its own.</div>
+</div>
+</section>
+<section>
+<h2>A horizontally scrollable area</h2>
+<div class="sideways" id="area-sideways" aria-label="Sideways scroll area">
+<div class="strip"></div>
+</div>
+</section>
+<section>
+<h2>An overflow box whose content fits</h2>
+<p>It must not be treated as a scroll area, it would only produce duplicates.</p>
+<div class="box" id="area-fits" aria-label="Fitting area">
+<p>Short content.</p>
+</div>
+</section>
+</main>
+<footer>End of the test page.</footer>
+</body>
+</html>

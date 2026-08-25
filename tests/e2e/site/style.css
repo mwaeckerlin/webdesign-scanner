@@ -1,0 +1,183 @@
+/* Test pages for the scanner. Deliberately built from relative units only,
+   so every layout scales with the viewport and the expected geometry of a
+   test can be derived instead of measured. */
+
+:root {
+  --unit: 1.5rem;
+  --near: 0;
+  --short: calc(var(--unit) / 2);
+  --long: calc(var(--unit) * 1.5);
+  --wide: calc(var(--unit) * 3);
+  --ink: #1c2733;
+  --paper: #ffffff;
+  --muted: #5b6b7c;
+  --accent: #0b5fff;
+  --rule: #d7dee6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Liberation Sans, DejaVu Sans, sans-serif;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  display: flex;
+  gap: var(--long);
+  align-items: baseline;
+  padding: var(--short) var(--long);
+  background: var(--ink);
+  color: var(--paper);
+  z-index: 10;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+header nav {
+  display: flex;
+  gap: var(--long);
+}
+
+header a {
+  color: var(--paper);
+}
+
+main {
+  padding: var(--wide) var(--long) var(--wide);
+  max-width: 60ch;
+  margin: 0 auto;
+}
+
+section {
+  margin-top: var(--wide);
+}
+
+section:first-of-type {
+  margin-top: var(--near);
+}
+
+h2 {
+  margin: 0 0 var(--short);
+  font-size: 1.5rem;
+}
+
+p {
+  margin: 0 0 var(--short);
+}
+
+.tall {
+  min-height: 90vh;
+}
+
+footer {
+  padding: var(--long);
+  border-top: 0.0625rem solid var(--rule);
+  color: var(--muted);
+  text-align: center;
+}
+
+.box {
+  height: 40vh;
+  overflow: auto;
+  border: 0.125rem solid var(--rule);
+  padding: var(--short);
+}
+
+.box .filler {
+  height: 300%;
+}
+
+.box .nested {
+  height: 50%;
+  overflow: auto;
+  border: 0.125rem dashed var(--accent);
+  padding: var(--short);
+}
+
+.box .nested .filler {
+  height: 400%;
+}
+
+.sideways {
+  overflow-x: auto;
+  border: 0.125rem solid var(--rule);
+}
+
+.sideways .strip {
+  width: 300%;
+  height: 20vh;
+  background: linear-gradient(90deg, var(--accent), var(--rule));
+}
+
+table {
+  border-collapse: collapse;
+  width: 240vw;
+}
+
+td,
+th {
+  border: 0.0625rem solid var(--rule);
+  padding: var(--short);
+  white-space: nowrap;
+}
+
+form {
+  display: grid;
+  gap: var(--short);
+  max-width: 30ch;
+}
+
+label {
+  display: grid;
+  gap: var(--near);
+}
+
+.banner {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: var(--long);
+  align-items: center;
+  justify-content: center;
+  padding: var(--long);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.banner[hidden] {
+  display: none;
+}
+
+@media print {
+  header,
+  .banner {
+    position: static;
+  }
+
+  @page {
+    margin: 15mm;
+  }
+
+  main {
+    max-width: none;
+  }
+
+  section {
+    break-after: page;
+  }
+
+  footer {
+    break-before: avoid;
+  }
+}

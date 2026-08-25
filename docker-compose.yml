@@ -1,0 +1,37 @@
+# One-shot capture job. It needs no other service and no graphical desktop.
+#
+#   TARGET_URL=https://example.com npm start   # run
+#   npm run results                            # copy /out next to this file
+#   npm stop                                   # remove container and volume
+#
+# The results live in a named volume, so nothing is written into the host
+# file system behind your back. `npm run results` fetches them with
+# `docker compose cp`.
+
+name: webdesign-scanner
+
+services:
+
+  scanner:
+    image: mwaeckerlin/webdesign-scanner
+    build:
+      context: .
+    init: true
+    # chromium keeps its render surfaces in shared memory; the docker default
+    # of 64 MB is not enough for large viewports and makes tabs crash
+    shm_size: 1gb
+    environment:
+      TARGET_URL: "${TARGET_URL:-https://example.com}"
+      OUT_DIR: /out
+      ON_EXISTING: "${ON_EXISTING:-fail}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      VIEWPORTS: "${VIEWPORTS:-}"
+      PRINT_FORMATS: "${PRINT_FORMATS:-}"
+      PRINT_ORIENTATIONS: "${PRINT_ORIENTATIONS:-}"
+      SETTLE_MS: "${SETTLE_MS:-}"
+      CHROMIUM_SANDBOX: "${CHROMIUM_SANDBOX:-}"
+    volumes:
+      - out:/out
+
+volumes:
+  out:

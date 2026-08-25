@@ -1,0 +1,13 @@
+/* The document decides its own paper size. The tool honours this only with
+   `print.preferCSSPageSize: true`; otherwise the configured formats win. */
+
+@page {
+  size: A5 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  section {
+    break-after: page;
+  }
+}

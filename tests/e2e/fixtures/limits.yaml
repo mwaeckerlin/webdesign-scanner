@@ -1,0 +1,20 @@
+# Deliberately tiny safety limits, so every limit has to apply and has to be
+# visible afterwards.
+version: 1
+viewports:
+  presets:
+    - hd
+  derived: false
+stabilize:
+  settleMs: 200
+  scrollSettleMs: 100
+  networkIdleTimeout: 3000
+screenshots:
+  maxStepsPerAxis: 2
+  maxShotsPerViewport: 3
+  regions:
+    maxRegions: 1
+    maxDepth: 1
+    maxShotsPerRegion: 1
+print:
+  enabled: false

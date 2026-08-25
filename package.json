@@ -1,0 +1,31 @@
+{
+  "name": "@mwaeckerlin/webdesign-scanner",
+  "version": "1.0.0",
+  "description": "Render a website in many viewports and print formats and produce evidence for an AI design review",
+  "type": "module",
+  "license": "LGPL-3.0-or-later",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "build": "docker compose build",
+    "start": "docker compose up --build --exit-code-from scanner scanner",
+    "results": "docker compose cp scanner:/out ./out",
+    "stop": "docker compose down -v --remove-orphans",
+    "test": "npm run test:docs && npm run test:unit && npm run test:image && npm run test:e2e",
+    "test:docs": "bash tests/docs-contract.sh",
+    "test:unit": "tsc -p tsconfig.test.json && vitest run",
+    "test:image": "npm run build && bash tests/image-contract.sh mwaeckerlin/webdesign-scanner",
+    "test:e2e": "bash tests/run-e2e.sh"
+  },
+  "dependencies": {
+    "playwright": "1.61.0",
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

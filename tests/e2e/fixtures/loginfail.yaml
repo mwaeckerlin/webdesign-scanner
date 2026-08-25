@@ -1,0 +1,14 @@
+# The same login, but the final check demands a page that is never reached.
+version: 1
+viewports:
+  presets:
+    - hd
+  derived: false
+stabilize:
+  settleMs: 200
+  scrollSettleMs: 100
+  networkIdleTimeout: 3000
+print:
+  enabled: false
+workflow:
+  file: /etc/wds/workflow-loginfail.yaml

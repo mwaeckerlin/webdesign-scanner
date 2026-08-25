@@ -1,0 +1,185 @@
+# Complete configuration with every option at its default value.
+#
+# Nothing here is required: without a configuration file the tool runs with
+# exactly these values and takes the target url from TARGET_URL. Copy the
+# file, delete what you do not change, and point CONFIG_FILE at it.
+#
+# Precedence: built-in defaults < this file < environment variables.
+
+version: 1
+
+# The entry url. TARGET_URL overrides it.
+url: https://example.com
+
+# Where the results are written. OUT_DIR overrides it.
+out: /out
+
+# What to do when the output directory already holds results.
+#   fail      stop and change nothing (default)
+#   overwrite throw the previous results away
+# ON_EXISTING overrides it.
+onExisting: fail
+
+# debug, info, warn or error. LOG_LEVEL overrides it.
+logLevel: info
+
+browser:
+  locale: en-US
+  # null keeps the container timezone (UTC in the delivered image)
+  timezone: null
+  # light, dark or no-preference — decides what prefers-color-scheme reports
+  colorScheme: light
+  # reduce or no-preference — decides what prefers-reduced-motion reports
+  reducedMotion: no-preference
+  # only for test systems with a self-signed certificate
+  ignoreHttpsErrors: false
+  # null keeps the browser's own user agent
+  userAgent: null
+  # sent with every request, e.g. a bypass token for a staging environment
+  extraHeaders: {}
+  # The browser's own sandbox, on top of the container. Off by default,
+  # because a current linux restricts unprivileged user namespaces and
+  # chromium then finds no usable sandbox inside a container — the container
+  # itself is the isolation boundary. Switch it on where the host can deliver
+  # it; the run then stops with a clear message where it cannot.
+  # CHROMIUM_SANDBOX overrides it.
+  sandbox: false
+
+viewports:
+  # names from the built-in catalogue, see the README. VIEWPORTS overrides it.
+  presets:
+    - desktop-4-3
+    - hd
+    - desktop-16-10
+    - desktop-16-9
+    - full-hd
+    - desktop-21-9
+    - uhd
+    - tablet-portrait
+    - tablet-landscape
+    - phone-small
+    - phone-medium
+    - phone-large
+    - phone-landscape
+  # additional viewports of your own
+  custom: []
+  # also capture the part widths of every desktop viewport (half, and for an
+  # ultrawide additionally one and two thirds). DERIVED_VIEWPORTS overrides it.
+  derived: true
+  # part widths below this are dropped, they are not realistic windows
+  minDerivedWidth: 320
+
+navigation:
+  # load, domcontentloaded, networkidle or commit
+  waitUntil: load
+  # milliseconds; NAVIGATION_TIMEOUT overrides it
+  timeout: 30000
+  # an http status of 400 or worse means the entry url is an error page and
+  # not the page to analyse — stop instead of capturing it
+  failOnErrorStatus: true
+
+stabilize:
+  # wait until all webfonts are loaded; a fallback font changes every line break
+  fonts: true
+  # wait for the network to go quiet before capturing
+  networkIdle: true
+  # a page with a websocket or with polling never goes quiet: after this many
+  # milliseconds the run continues and records a warning
+  networkIdleTimeout: 10000
+  # extra wait for content that appears after the network is quiet.
+  # SETTLE_MS overrides it.
+  settleMs: 1000
+  # wait after every scroll step, for content that loads while scrolling
+  scrollSettleMs: 400
+  # stop animations and transitions so two runs are comparable
+  freezeAnimations: true
+  # hide the blinking text caret
+  hideCaret: true
+  # scroll through the whole document once before measuring, so lazily loaded
+  # content exists before the document height is determined
+  preScroll: true
+
+screenshots:
+  # SCREENSHOTS overrides it
+  enabled: true
+  # what a visitor sees the moment the page is ready
+  viewportShot: true
+  # the series over all scroll positions of the main document
+  scrollSeries: true
+  # one image of the whole document
+  fullPage: true
+  # documents taller than this get no full page image (chromium becomes
+  # unreliable with very large images); the scroll series still covers them
+  fullPageMaxHeight: 30000
+  # how much two neighbouring shots of a series share, 0 .. 0.9
+  overlap: 0.1
+  # safety limits — generous by default, every limit that applies is logged
+  # and named in the manifest
+  maxStepsPerAxis: 200
+  maxShotsPerViewport: 1000
+  maxShotsTotal: 10000
+  regions:
+    # capture independently scrollable inner areas separately
+    enabled: true
+    maxRegions: 25
+    maxDepth: 4
+    # ignore boxes smaller than this, they are scrollbars and chips
+    minWidth: 120
+    minHeight: 120
+    maxShotsPerRegion: 200
+
+print:
+  # PRINT overrides it
+  enabled: true
+  # A0 .. A6, Letter, Legal, Tabloid, Ledger. PRINT_FORMATS overrides it.
+  formats:
+    - A3
+    - A4
+    - A5
+    - Letter
+  # PRINT_ORIENTATIONS overrides it
+  orientations:
+    - portrait
+    - landscape
+  margin:
+    top: 10mm
+    right: 10mm
+    bottom: 10mm
+    left: 10mm
+  # print background colours and images, otherwise most designs print white
+  printBackground: true
+  # false: the formats above decide the paper size
+  # true:  a `@page { size: ... }` rule in the page decides, and the formats
+  #        above are only used where the page says nothing
+  preferCSSPageSize: false
+  # 0.1 .. 2
+  scale: 1
+  # the viewport whose state the print output is produced from; without an
+  # entry here that is full-hd where it is configured, otherwise the first
+  # configured viewport
+  viewport: full-hd
+  png:
+    # render every pdf page as an image as well
+    enabled: true
+    dpi: 150
+
+workflow:
+  # path to a workflow file inside the container. WORKFLOW_FILE overrides it.
+  file: null
+  # log in once and re-use the authenticated state for the remaining
+  # viewports; the workflow itself still runs for every viewport
+  reuseStorageState: true
+  # start from an already authenticated state. STORAGE_STATE overrides it.
+  storageStateIn: null
+  # write the authenticated state for a later run. It carries login
+  # credentials and must not point into the output directory.
+  # STORAGE_STATE_OUT overrides it.
+  storageStateOut: null
+
+diagnostics:
+  # record console errors of the page
+  captureConsole: true
+  # treat an uncaught javascript error as a failed run
+  failOnPageError: false
+  # treat a failed sub request (image, stylesheet, api) as a failed run
+  failOnHttpError: false
