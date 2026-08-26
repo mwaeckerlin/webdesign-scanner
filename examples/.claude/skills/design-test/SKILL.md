@@ -15,14 +15,18 @@ that a third of the screen stays empty.
 ## 1. Render
 
 ```bash
-mkdir -p out
-docker run --rm -u $(id -u):$(id -g) \
-  -e TARGET_URL=<url> -e ON_EXISTING=overwrite \
-  -v "$PWD/out:/out" mwaeckerlin/webdesign-scanner
+docker run --name scan -e TARGET_URL=<url> mwaeckerlin/webdesign-scanner
+docker cp scan:/out ./out
+docker rm scan
 ```
 
-`-u` makes the results belong to the caller; `out` has to exist beforehand,
-otherwise Docker creates it as root and the run cannot write.
+Each run uses a fresh container, so the results are always the results of
+this run. Remove the container at the end, otherwise the next run finds the
+name taken.
+
+Nothing of the host is mounted into the container — that is deliberate, a run
+must not be able to touch a working copy. The results leave through
+`docker cp`, which writes them as the calling user.
 
 **Full catalogue by default — 26 viewports, A3, A4, A5 and Letter upright and
 sideways.** That is the state that counts, and it is what a commit is judged
@@ -46,6 +50,14 @@ index in `out/meta/manifest.json`, the short human summary in
 If the page needs a login or a particular state, describe the way there in a
 workflow file and pass it as `WORKFLOW_FILE`. The password comes from an
 environment variable or a secret file, never from the workflow file itself.
+
+Scanning a view of an app that already runs on the host and sits behind a
+login is a recipe, not a wall: reach it over the host network so its
+trusted-domain check passes, make every login step conditional (the workflow
+re-runs per viewport, already authenticated), create a throw-away review
+account, and disable one-time onboarding overlays for the run. A complete,
+working stack is in [../host-login/](../host-login/); the network variants are
+in the scanner's README under "Reaching the target url".
 
 ## 2. Judge every image, one by one
 

@@ -1,0 +1,71 @@
+# Log in, then open the view that is to be reviewed.
+#
+# The workflow runs once PER VIEWPORT. With reuseStorageState (the default)
+# every run after the first already starts authenticated and never sees the
+# login form. Every login step therefore carries a `when: visible` condition
+# (or is `optional`), so the later runs walk past it without failing.
+#
+# No password appears here. `env` reads SCAN_USERNAME, `file` reads the docker
+# secret under /run/secrets. Both values are masked in every log line.
+#
+# The selectors below are generic (name="user" / name="password"). Adapt them
+# to your app — `role`/`label`/`text` targets are usually more robust than css.
+
+version: 1
+name: host-login
+description: log in over the host network and open the view under review
+
+defaults:
+  timeout: 20000
+
+steps:
+
+  # The login form is often rendered by JavaScript; wait briefly, and stay
+  # optional so an already-authenticated run (entry is the app) walks past it.
+  - action: waitForSelector
+    label: login form present
+    optional: true
+    timeout: 6000
+    target: { css: 'input[name="user"]' }
+    state: visible
+
+  - action: fill
+    label: user name
+    when:
+      visible: { css: 'input[name="user"]' }
+    target: { css: 'input[name="user"]' }
+    value: { env: SCAN_USERNAME }
+
+  - action: fill
+    label: password
+    when:
+      visible: { css: 'input[name="password"]' }
+    target: { css: 'input[name="password"]' }
+    value: { file: /run/secrets/scan_password }
+
+  - action: click
+    label: submit login
+    when:
+      visible: { css: 'button[type="submit"]' }
+    target: { css: 'button[type="submit"]' }
+
+  - action: waitForLoadState
+    state: networkidle
+
+  # Navigate to the exact view under review — adapt the url / target.
+  - action: goto
+    label: open the view
+    url: 'http://localhost:8080/index.php/apps/example/'
+
+  - action: waitForLoadState
+    state: networkidle
+
+  # Prove the right screen was reached; without this the run could cheerfully
+  # produce a design review of an error page.
+  - action: expectVisible
+    label: the view heading
+    target: { role: heading, name: Example }
+
+  # Everything before this point was navigation; from here the state is the
+  # one that gets captured.
+  - action: ready

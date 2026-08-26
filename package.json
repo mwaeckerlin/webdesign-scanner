@@ -1,6 +1,6 @@
 {
   "name": "@mwaeckerlin/webdesign-scanner",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Render a website in many viewports and print formats and produce evidence for an AI design review",
   "type": "module",
   "license": "LGPL-3.0-or-later",

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -59,6 +60,24 @@ describe('the shipped example workflows', () => {
     expect(text).toMatch(/env:\s+SCAN_USERNAME/)
     expect(text).toMatch(/file:\s+\/run\/secrets\//)
   })
+
+  it('parse the host login example, and keep its password out of it too', () => {
+    const path = join(EXAMPLES, 'host-login', 'workflow.yaml')
+    const workflow = parseShipped(path, { SCAN_USERNAME: 'review' })
+    expect(workflow.name).toBe('host-login')
+    expect(workflow.steps.at(-1)!.action).toBe('ready')
+    expect(readFileSync(path, 'utf8')).toMatch(/file:\s+\/run\/secrets\//)
+  })
+
+  it('keep the password file the host login example asks for out of git', () => {
+    // the example tells the reader to create examples/host-login/scan_password.txt;
+    // without an ignore rule the next `git add -A` would commit it
+    const ignored = execFileSync(
+      'git', ['check-ignore', 'examples/host-login/scan_password.txt'],
+      { cwd: process.cwd(), encoding: 'utf8' }
+    )
+    expect(ignored.trim()).toBe('examples/host-login/scan_password.txt')
+  })
 })
 
 describe('the shipped assistant configuration', () => {
@@ -80,10 +99,10 @@ describe('the shipped assistant configuration', () => {
     const text = skill()
     expect(text).toMatch(/docker run/)
     expect(text).toMatch(/TARGET_URL=/)
-    // the results have to belong to the caller, otherwise root owns them and
-    // the next run cannot replace them
-    expect(text).toMatch(/-u \$\(id -u\)/)
-    expect(text).toMatch(/-v "\$PWD\/out:\/out"/)
+    expect(text).toMatch(/docker cp/)
+    // nothing of the host is ever mounted into the container: a run must not
+    // be able to reach a working copy
+    expect(text).not.toMatch(/-v\s|--volume|--mount/)
   })
 
   it('demands the full catalogue before a commit', () => {

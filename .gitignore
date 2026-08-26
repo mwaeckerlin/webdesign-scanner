@@ -3,3 +3,8 @@ dist
 out
 tests/e2e/results
 .playwright
+
+# password files the examples ask you to create — never in version control
+scan_password.txt
+*password*.txt
+!tests/e2e/fixtures/test-password.txt

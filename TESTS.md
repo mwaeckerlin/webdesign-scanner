@@ -402,6 +402,8 @@ through hundreds of images.
 - **F14** `tests/unit/examples.test.ts` › parse, so a reader can start from them — the example workflows are valid.
 - **F14** `tests/unit/examples.test.ts` › show every action of the format at least once — the reference workflow stays complete.
 - **F16** `tests/unit/examples.test.ts` › keep the password out of the file itself — the examples teach the safe way.
+- **F15, F16** `tests/unit/examples.test.ts` › parse the host login example, and keep its password out of it too — the shipped login stack is valid and reads its password from a secret file.
+- **F16** `tests/unit/examples.test.ts` › keep the password file the host login example asks for out of git — the file the reader is told to create can never be committed by accident.
 - **F26** `tests/unit/examples.test.ts` › ships a skill an assistant can pick up on its own — the description says when to apply it, not only what it does.
 - **F26** `tests/unit/examples.test.ts` › tells the assistant to render before it judges — the skill runs the published image directly and hands the results to the calling user.
 - **F26** `tests/unit/examples.test.ts` › demands the full catalogue before a commit — a reduced run is an intermediate check and never closes the design test.

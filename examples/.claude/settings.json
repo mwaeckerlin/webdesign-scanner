@@ -2,8 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(docker run:*)",
-      "Bash(docker compose:*)",
-      "Bash(mkdir:*)"
+      "Bash(docker cp:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker compose:*)"
     ]
   }
 }

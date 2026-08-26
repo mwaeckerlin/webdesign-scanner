@@ -7,8 +7,8 @@ Renders PNG and PDF of your website in many sizes on many resolutions, so that y
 ![The same page from an ultrawide down to a phone: three columns become two, then one](doc/overview.png)
 
 ```bash
-$ TARGET_URL=https://example.com npm start
-$ npm run results
+$ docker run --name scan -e TARGET_URL=https://example.com mwaeckerlin/webdesign-scanner
+$ docker cp scan:/out ./out && docker rm scan
 ```
 
 [Quick start](#quick-start) ·
@@ -21,7 +21,7 @@ $ npm run results
 
 # What it can do
 
-A screenshot tool gives one picture of one window. This gives:
+A screenshot tool captures one window. This captures:
 
 - **26 viewports**, including the half, third and two-third widths of a
   monitor.
@@ -29,10 +29,11 @@ A screenshot tool gives one picture of one window. This gives:
   scrolls on its own.
 - **Pages behind a login**, reached by a declarative workflow file;
   passwords come from the environment or a secret file.
-- **Proof it was the right page**: closing assertions, and on failure the run
-  aborts and discards every image.
+- **The right page, or nothing.** The workflow ends with checks; if one
+  fails, the run stops and throws every image away.
 - **A3, A4, A5, Letter** upright and sideways as PDF, every page also as PNG.
-- **A manifest** naming viewport, scroll position and panel for every file.
+- **A manifest** that says for every file which viewport, scroll position and
+  panel it shows.
 
 ## Output of one run
 
@@ -44,8 +45,8 @@ out/
          hd-1280x720-region-000-x00000y00000-r01-main-x00000y00420.png
   print/pdf/a4-portrait.pdf
         png/a4-portrait-p001.png
-  meta/manifest.json    every artifact, described
-       summary.md       the same for people
+  meta/manifest.json    what every file shows
+       summary.md       the same in words
 ```
 
 ---
@@ -54,20 +55,19 @@ out/
 
 ## Quick start
 
-Docker, one command, results in `./out` and belonging to you:
+Run the container, then copy the results out of it:
 
 ```bash
-$ mkdir -p out
-$ docker run --rm -u $(id -u):$(id -g) -e TARGET_URL=https://example.com \
-      -v "$PWD/out:/out" mwaeckerlin/webdesign-scanner
+$ docker run --name scan -e TARGET_URL=https://example.com mwaeckerlin/webdesign-scanner
+$ docker cp scan:/out ./out && docker rm scan
 ```
 
-`out` has to exist beforehand — Docker would otherwise create it as root and
-the run could not write into it.
+Nothing of yours is mounted into the container, so a run cannot touch your
+working copy. `docker cp` writes the files as you, so they belong to you.
 
-That captures the full catalogue: 26 viewports, A3, A4, A5 and Letter upright
-and sideways, about five minutes and several hundred images. For a first look
-add:
+That is the full catalogue — 26 viewports and four paper formats upright and
+sideways. It takes about five minutes and produces several hundred images.
+For a first look add:
 
 ```bash
       -e VIEWPORTS=full-hd,phone-medium -e PRINT=false
@@ -85,22 +85,49 @@ $ npm stop               # removes container and volume
 
 ## Getting the results out
 
-The output volume is named `webdesign-scanner_out`. Three ways to reach it:
+The results stay inside the container, or inside a volume when you use
+Compose. Copy them out:
 
 ```bash
+$ docker cp scan:/out ./out                       # from the named container
 $ npm run results                                 # docker compose cp, into ./out
 $ docker compose cp scanner:/out ./somewhere      # the same, explicitly
-$ docker run --rm -v webdesign-scanner_out:/out --entrypoint /usr/bin/ls \
-      mwaeckerlin/webdesign-scanner /out/screen   # look without copying
 ```
+
+**Or mount a directory** and skip the copy — one command instead of three:
+
+```bash
+$ mkdir -p out
+$ docker run --rm -u $(id -u):$(id -g) -e TARGET_URL=https://example.com \
+      -v "$PWD/out:/out" mwaeckerlin/webdesign-scanner
+```
+
+### Why the copy is the default
+
+**Security.** The browser renders whatever the target site serves, which is
+untrusted code. A mount is a writable hole from that browser into your file
+system: if the page ever escapes the browser, it writes where the mount
+points. Without a mount there is nothing outside the container to reach, and
+the damage ends when the container is removed. This is the reason the shipped
+skill for AI agents never mounts — an agent runs the scanner unattended,
+against whatever url it was handed.
+
+**Ownership.** A mounted directory is written by the container user, so the
+files end up belonging to somebody else unless you pass
+`-u $(id -u):$(id -g)`. And the directory has to exist first: Docker
+otherwise creates it as root and the run cannot write into it. `docker cp`
+writes through the Docker client as you, so neither question arises.
+
+**Speed off Linux.** On macOS and Windows a mount goes through a file sharing
+layer. For several hundred images that is slow; a copy transfers in one go.
+
+The mount pays off when you run the scanner yourself, on your own machine,
+against a site you trust, and want the images without a second command. That
+is a fair trade — make it knowingly.
 
 ## Reaching the target url
 
 **A public site.** Nothing to do.
-
-```bash
-$ TARGET_URL=https://example.com npm start
-```
 
 **A service in the same Compose stack.** Inside a Compose network the
 service name is the host name, and the port is the container port, not a
@@ -133,15 +160,49 @@ services:
       TARGET_URL: http://host.docker.internal:3000/
 ```
 
+**Something on the host that only answers to its own domain.** Many
+applications refuse a request whose `Host` header is not a configured,
+trusted name — Nextcloud's `trusted_domains`, Django's `ALLOWED_HOSTS`, a
+Rails host authorisation. Reached through `host.docker.internal` they see
+that name in the `Host` header and answer with an error page, and the scan
+captures the error page instead of the site. Share the host's network
+instead, so the container reaches the published port under the exact name
+the app trusts:
+
+```yaml
+services:
+  scanner:
+    image: mwaeckerlin/webdesign-scanner
+    network_mode: host
+    environment:
+      # the port the app publishes on the host; localhost is now the host
+      TARGET_URL: http://localhost:29824/
+```
+
+`network_mode: host` is Linux-only; on it a port published on the host is
+reachable at `localhost:<published-port>`, with the `Host` header the app
+expects. On Docker Desktop, where host networking is limited, add
+`host.docker.internal` to the app's trusted-domain list instead and keep the
+recipe above. A full, working stack for this case — a running app behind a
+login, scanned over the host network — is in
+[examples/host-login/](examples/host-login/). It asks you to create a
+password file for a throw-away review account; that file is covered by
+`.gitignore` and a test keeps it covered.
+
+`network_mode: host` gives the container the host's network stack, so it
+reaches every port on that machine, not only the one you meant. Use it for a
+local development stack you control, and keep it out of anything that scans a
+site you do not.
+
 For a site with a self-signed certificate add `browser.ignoreHttpsErrors:
 true`; for a staging environment behind a header token use
 `browser.extraHeaders`.
 
 ## The design check in your AI agent
 
-Your agent renders every change with a visible surface and judges the images
-before the commit. Three files, ready to copy from
-[examples/.claude/](examples/.claude/).
+Whenever a change touches something visible, your agent renders the page,
+looks at the images and fixes what it finds — before you commit. Three files
+set that up, ready to copy from [examples/.claude/](examples/.claude/).
 
 **1. The skill:**
 
@@ -166,7 +227,7 @@ named as a blocker, with the image that shows it.
 `~/.claude/settings.json`, so a run never stops to ask:
 
 ```json
-"Bash(docker run:*)", "Bash(docker compose:*)", "Bash(mkdir:*)"
+"Bash(docker run:*)", "Bash(docker cp:*)", "Bash(docker rm:*)", "Bash(docker compose:*)"
 ```
 
 `Bash(docker run:*)` allows **any** container, including one as root with any
@@ -199,8 +260,8 @@ you: "fix the header spacing"
 - **The permissions** keep the run from stopping mid-task to ask.
 - **The agent opens the PNGs.** The file tool passes them to the model as
   images, so it sees the rendered pixels and compares them against the
-  checklist. Without readable images it summarises `manifest.json` and
-  returns a review containing no observation.
+  checklist. If it cannot read the images it falls back to summarising
+  `manifest.json`, and then it reports nothing it has actually seen.
 
 ---
 
@@ -208,9 +269,9 @@ you: "fix the header spacing"
 
 ## Configuration
 
-Precedence, lowest to highest: built-in defaults, configuration file,
-environment variables. The complete effective configuration is written into
-the manifest, so a run can always be reproduced.
+Three sources, each one overriding the one before: the built-in defaults,
+then the configuration file, then the environment variables. The manifest
+records the settings the run actually used, so any run can be repeated.
 
 An unknown option is an error, never an ignored line. A misspelled option
 that is quietly dropped produces a run that looks fine and captures the
@@ -247,8 +308,8 @@ default value, with a comment on each. It is validated by a test, so it can
 never drift away from the real defaults. Copy it, delete everything you do
 not change, and point `CONFIG_FILE` at it.
 
-Because nothing is mounted from the host, the file has to be inside the
-image. Build a small image of your own on top of this one —
+Nothing is mounted from the host, so the file has to be inside the image.
+Build a small image of your own on top of this one —
 [`examples/with-files/`](examples/with-files/) is a complete, working
 example:
 
@@ -349,8 +410,8 @@ Four kinds of image are produced per viewport, all into `/out/screen/`:
 The series starts at the origin and advances by the visible size minus a
 configurable overlap (`screenshots.overlap`, default 10 %), so nothing falls
 between two images. The **exact end position is always included**, even when
-it is closer than one step — the bottom of a page is what a design is judged
-by. Duplicate positions are removed.
+it is closer than one step; the bottom of a page decides as much as the top.
+Duplicate positions are removed.
 
 Where the document also scrolls sideways, both axes are combined: every
 horizontal position at every vertical position. Both axes belong to the same
@@ -386,8 +447,8 @@ why they exist.
 
 ### Safety limits
 
-Generous by default, all configurable, and **every limit that applies is
-written into the log, the manifest and the summary** with what was wanted
+The defaults are generous and every limit can be changed. **Whenever a limit
+applies, the log, the manifest and the summary say so**, with what was wanted
 and what was captured. An incomplete capture must never look complete.
 
 | Limit | Default | Bounds |
@@ -485,8 +546,8 @@ useful in a pipeline, where a broken page should not be reviewed at all.
   screen/                png images of every captured state
   print/pdf/             one pdf per paper format and orientation
   print/png/             every pdf page as an image
-  meta/manifest.json     every artifact, described
-  meta/summary.md        the same for people
+  meta/manifest.json     what every file shows
+  meta/summary.md        the same in words
   debug/                 only after a failure: the state at that moment
 ```
 
@@ -499,7 +560,7 @@ manifest is the promise that the capture is complete.
 ```json
 {
   "manifestVersion": 1,
-  "tool": { "name": "@mwaeckerlin/webdesign-scanner", "version": "1.0.0" },
+  "tool": { "name": "@mwaeckerlin/webdesign-scanner", "version": "1.0.1" },
   "run": { "status": "ok", "startedAt": "…", "finishedAt": "…", "durationMs": 42000,
            "browserSandbox": false },
   "target": { "requestedUrl": "…", "finalUrl": "…", "title": "Dashboard" },
@@ -600,15 +661,16 @@ since animations are frozen on purpose. A request that really failed appears
 as `httperror` with its status, or with a network code such as
 `net::ERR_NAME_NOT_RESOLVED`.
 
-**The run takes minutes.** That is the default set of viewports: thirteen
-presets plus the part widths derived from them, twenty-two in all, each one a
-fresh page load with its own scroll series. A full run of a normal site takes
-around four to five minutes. Name the viewports you actually want and it
-drops to seconds:
+**The run takes minutes.** The defaults are fourteen viewports plus the part
+widths derived from them, twenty-six in all, and each one loads the page
+again and scrolls through it. A normal site takes four to five minutes. Name
+the viewports you want and it drops to seconds:
 
 ```bash
-$ TARGET_URL=https://example.com VIEWPORTS=full-hd,tablet-portrait,phone-medium \
-    PRINT_FORMATS=A4 PRINT_ORIENTATIONS=portrait npm start
+$ docker run --name scan -e TARGET_URL=https://example.com \
+      -e VIEWPORTS=full-hd,tablet-portrait,phone-medium \
+      -e PRINT_FORMATS=A4 -e PRINT_ORIENTATIONS=portrait \
+      mwaeckerlin/webdesign-scanner
 ```
 
 Where the time goes is visible in the log: every viewport reports how many
@@ -657,10 +719,11 @@ own.
   screen — including real customer data if you scanned a production system
   with a real account.
 - **Nothing is mounted from the host.** Configuration and workflow files are
-  copied into an image, results leave through `docker compose cp`. A run
-  cannot write anywhere near your working copy.
-
----
+  copied into an image, results leave through `docker cp`. A run cannot read
+  or write anywhere in your working copy. Mounting a directory for the
+  results is possible and documented, and it opens exactly one writable path
+  from an untrusted page into your file system — see
+  [why the copy is the default](#why-the-copy-is-the-default).
 
 ---
 
@@ -951,15 +1014,13 @@ A thorough run produces hundreds of images. Do not upload all of them.
 
 ---
 
----
-
 # Pages behind a login: the workflow format
 
 The entry url is rarely the page worth reviewing. A workflow file describes
 how to get there — declaratively, in YAML or JSON, versioned.
 
 ```bash
-$ WORKFLOW_FILE=/etc/webdesign-scanner/workflow.yaml npm start
+      -e WORKFLOW_FILE=/etc/webdesign-scanner/workflow.yaml
 ```
 
 ## A first workflow
@@ -1195,8 +1256,8 @@ A Playwright storage state is a JSON file holding cookies and local storage
 — an authenticated session in a file.
 
 ```bash
-$ STORAGE_STATE=/state/session.json npm start          # start authenticated
-$ STORAGE_STATE_OUT=/state/session.json npm start      # keep the session
+      -e STORAGE_STATE=/state/session.json        # start already logged in
+      -e STORAGE_STATE_OUT=/state/session.json    # save the session for next time
 ```
 
 Within one run the state is handled automatically: the workflow runs for the
@@ -1249,13 +1310,12 @@ $ npm test             # everything, including the docker based scenarios
 
 `npm test` runs four suites: the documentation contract (every feature has a
 test, every test is registered, nothing is skipped), the unit tests, the
-image contract (the delivered image runs unprivileged, brings its browser
-and its pdf tools and no build tools) and the end to end scenarios —
-thirteen complete runs of the delivered image against a local test site
-covering main
-document scrolling, inner scroll areas, lazy loading, fixed elements, a
-login, horizontal scrolling, print stylesheets, every failure mode and the
-protection of existing results.
+image contract (the delivered image runs unprivileged, brings its browser and
+its pdf tools and no build tools), and fourteen end to end scenarios. Each
+scenario is a complete run of the delivered image against a local test site,
+together covering document scrolling, inner scroll areas, lazy loading, fixed
+elements, a login, horizontal scrolling, print stylesheets, every failure
+mode, an interrupted run, and the protection of existing results.
 
 ## Design decisions
 

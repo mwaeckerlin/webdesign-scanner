@@ -1,0 +1,65 @@
+# Scan a view of an application that already runs on the Docker host and sits
+# behind a login — the common case for a local development stack.
+#
+# Two things make this case different from the compose-network example:
+#
+#   1. The app is reached over the HOST network, not a compose network, so its
+#      trusted-domain / allowed-hosts check sees the exact name it expects.
+#      network_mode: host makes localhost inside the container the host itself,
+#      and the app's published port answers under the Host header it trusts.
+#      (Linux only. On Docker Desktop add the domain to the app's trusted-host
+#      list and use host.docker.internal instead — see the README.)
+#
+#   2. The workflow logs in. It runs once per viewport; from the second run on
+#      the session is already there (reuseStorageState), so every login step is
+#      conditional and simply skips — see workflow.yaml.
+#
+# Around the scan, two host-side steps that compose cannot do for you:
+#
+#   - Create a throw-away review account in the app and put its password in
+#     scan_password.txt (kept out of version control). Delete the account after.
+#       Nextcloud:  occ user:add --password-from-env --group admin review
+#                   occ user:delete review
+#   - Disable one-time onboarding overlays that would cover the view, and
+#     re-enable them afterwards.
+#       Nextcloud:  occ app:disable firstrunwizard   #  ... scan ...
+#                   occ app:enable  firstrunwizard
+#
+# Run:
+#   docker compose up --build --exit-code-from scanner scanner
+#   docker compose cp scanner:/out ./out
+#   docker compose down -v
+
+name: webdesign-scanner-host-login
+
+services:
+
+  scanner:
+    build:
+      context: .
+    init: true
+    shm_size: 1gb
+    # localhost inside the container is now the host; reach the published port.
+    network_mode: host
+    environment:
+      # the port the app publishes on the host — adapt to your stack
+      TARGET_URL: http://localhost:8080/
+      OUT_DIR: /out
+      # the review account created above; not a secret, may stand here
+      SCAN_USERNAME: review
+      # a short run for iterating; drop these two for the full catalogue
+      VIEWPORTS: "full-hd,tablet-portrait,phone-medium"
+      PRINT: "false"
+    secrets:
+      # the workflow reads it from /run/secrets/scan_password
+      - scan_password
+    volumes:
+      - out:/out
+
+secrets:
+  scan_password:
+    # the only file the host provides — keep it out of version control
+    file: ./scan_password.txt
+
+volumes:
+  out:

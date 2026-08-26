@@ -20,8 +20,8 @@ Then two small edits by hand:
    check that interrupts you is a check you switch off.
 
 The skill runs the published image directly, so nothing has to be cloned or
-built. It passes `-u $(id -u):$(id -g)`, which makes the results belong to
-you instead of to root.
+built. It mounts nothing from your machine — the results leave the container
+through `docker cp`, which writes them as you.
 
 For a single project, put the same three things in `<project>/.claude/`
 instead of `~/.claude/`; they then apply there only.
@@ -52,9 +52,9 @@ it looks, at thirty screens nobody would open by hand.
 1. **The assistant must be able to open the images.** It judges the design by
    looking at the PNGs. If the results land outside the directories it may
    read, it falls back to reading the manifest and summarising it — which
-   looks like a design review and is not one. `npm run results` copies them
-   to `out/` in the project, which satisfies this by default. Put `out` in
-   your `.gitignore`.
+   looks like a design review and is not one. `docker cp` puts them into
+   `out/` in the project, which satisfies this by default. Put `out` in your
+   `.gitignore`.
 2. **The run must not ask for permission every time.** That is what
    `settings.json` above is for.
 3. **The full catalogue decides.** The skill renders all 26 viewports and all
